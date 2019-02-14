@@ -1,4 +1,4 @@
-// libaribb25.cpp: CB25Decoder クラスのインプリメンテーション
+﻿// libaribb25.cpp: CB25Decoder クラスのインプリメンテーション
 //
 //////////////////////////////////////////////////////////////////////
 #include "libaribb25.h"
@@ -246,6 +246,11 @@ void CB25Decoder::SetMulti2Round(const int32_t round)
 {
 	// ラウンド段数を設定
 	_b25->set_multi2_round(_b25, round);
+}
+
+void CB25Decoder::SetSimdMode(const int32_t instruction)
+{
+	_b25->set_simd_mode(_b25, instruction);
 }
 
 const DWORD CB25Decoder::GetDescramblingState(const WORD wProgramID)

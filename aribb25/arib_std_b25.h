@@ -32,6 +32,7 @@ typedef struct {
 	int (* set_multi2_round)(void *std_b25, int32_t round);
 	int (* set_strip)(void *std_b25, int32_t strip);
 	int (* set_emm_proc)(void *std_b25, int32_t on);
+	int (* set_simd_mode)(void *std_b25, int32_t instructin);
 
 	int (* set_b_cas_card)(void *std_b25, B_CAS_CARD *bcas);
 

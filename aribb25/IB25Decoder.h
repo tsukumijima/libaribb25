@@ -1,10 +1,11 @@
-// IB25Decoder.h: IB25Decoder クラスのインターフェイス
+﻿// IB25Decoder.h: IB25Decoder クラスのインターフェイス
 //
 //////////////////////////////////////////////////////////////////////
 
 
 #pragma once
 
+#include <stdint.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // 定数定義
@@ -46,7 +47,8 @@ public:
 	virtual void DiscardNullPacket(const bool bEnable = true) = 0;
 	virtual void DiscardScramblePacket(const bool bEnable = true) = 0;
 	virtual void EnableEmmProcess(const bool bEnable = true) = 0;
-	virtual void SetMulti2Round(const int32_t round = 4) = 0;	// オリジナルに追加
+	virtual void SetMulti2Round(const int32_t round = 4) = 0;		// オリジナルに追加
+	virtual void SetSimdMode(const int32_t instruction = 3) = 0;	// オリジナルに追加
 
 	virtual const DWORD GetDescramblingState(const WORD wProgramID) = 0;
 

@@ -2,6 +2,7 @@
 #define MULTI2_H
 
 #include "portable.h"
+#include "simd_instruction_type.h"
 
 typedef struct {
 
@@ -11,6 +12,7 @@ typedef struct {
 	int (* add_ref)(void *m2);
 
 	int (* set_round)(void *m2, int32_t val);
+	int (* set_simd)(void *m2, enum INSTRUCTION_TYPE);
 
 	int (* set_system_key)(void *m2, uint8_t *val);
 	int (* set_init_cbc)(void *m2, uint8_t *val);

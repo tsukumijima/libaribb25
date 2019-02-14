@@ -5,6 +5,7 @@
 #include "arib_std_b25.h"
 #include "arib_std_b25_error_code.h"
 #include "multi2.h"
+#include "multi2_simd.h"
 #include "ts_common_types.h"
 #include "ts_section_parser.h"
 
@@ -88,6 +89,9 @@ typedef struct {
 	int32_t            multi2_round;
 	int32_t            strip;
 	int32_t            emm_proc_on;
+#ifdef ENABLE_MULTI2_SIMD
+	int32_t            simd_instruction;
+#endif
 
 	int32_t            unit_size;
 
@@ -315,6 +319,7 @@ static void release_arib_std_b25(void *std_b25);
 static int set_multi2_round_arib_std_b25(void *std_b25, int32_t round);
 static int set_strip_arib_std_b25(void *std_b25, int32_t strip);
 static int set_emm_proc_arib_std_b25(void *std_b25, int32_t on);
+static int set_simd_mode_arib_std_b25(void *std_b25, int32_t instruction);
 static int set_b_cas_card_arib_std_b25(void *std_b25, B_CAS_CARD *bcas);
 static int set_unit_size_arib_std_b25(void *std_b25, int size);
 static int reset_arib_std_b25(void *std_b25);
@@ -344,6 +349,7 @@ ARIB_STD_B25 *create_arib_std_b25(void)
 	}
 
 	prv->multi2_round = 4;
+	prv->simd_instruction = (int32_t)get_supported_simd_instruction();
 
 	r = (ARIB_STD_B25 *)(prv+1);
 	r->private_data = prv;
@@ -352,6 +358,7 @@ ARIB_STD_B25 *create_arib_std_b25(void)
 	r->set_multi2_round = set_multi2_round_arib_std_b25;
 	r->set_strip = set_strip_arib_std_b25;
 	r->set_emm_proc = set_emm_proc_arib_std_b25;
+	r->set_simd_mode = set_simd_mode_arib_std_b25;
 	r->set_b_cas_card = set_b_cas_card_arib_std_b25;
 	r->set_unit_size = set_unit_size_arib_std_b25;
 	r->reset = reset_arib_std_b25;
@@ -380,7 +387,11 @@ static int32_t find_ca_descriptor_pid(uint8_t *head, uint8_t *tail, int32_t ca_s
 static int32_t add_ecm_stream(ARIB_STD_B25_PRIVATE_DATA *prv, TS_STREAM_LIST *list, int32_t ecm_pid);
 static int check_ecm_complete(ARIB_STD_B25_PRIVATE_DATA *prv);
 static int find_ecm(ARIB_STD_B25_PRIVATE_DATA *prv);
+#ifdef ENABLE_MULTI2_SIMD
+static int proc_ecm(DECRYPTOR_ELEM *dec, B_CAS_CARD *bcas, int32_t multi2_round, int32_t simd_instruction);
+#else
 static int proc_ecm(DECRYPTOR_ELEM *dec, B_CAS_CARD *bcas, int32_t multi2_round);
+#endif
 static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv);
 
 static int proc_cat(ARIB_STD_B25_PRIVATE_DATA *prv);
@@ -468,6 +479,21 @@ static int set_emm_proc_arib_std_b25(void *std_b25, int32_t on)
 
 	prv->emm_proc_on = on;
 
+	return 0;
+}
+
+static int set_simd_mode_arib_std_b25(void * std_b25, int32_t instruction)
+{
+#ifdef ENABLE_MULTI2_SIMD
+	ARIB_STD_B25_PRIVATE_DATA *prv;
+
+	prv = private_data(std_b25);
+	if(prv == NULL){
+		return ARIB_STD_B25_ERROR_INVALID_PARAM;
+	}
+
+	prv->simd_instruction = instruction;
+#endif
 	return 0;
 }
 
@@ -694,7 +720,11 @@ static int flush_arib_std_b25(void *std_b25)
 			if(m == 0){
 				goto NEXT;
 			}
+#ifdef ENABLE_MULTI2_SIMD
+			r = proc_ecm(dec, prv->bcas, prv->multi2_round, prv->simd_instruction);
+#else
 			r = proc_ecm(dec, prv->bcas, prv->multi2_round);
+#endif
 			if(r < 0){
 				if((curr+unit) <= tail)
 					l = unit;
@@ -1906,7 +1936,11 @@ static int find_ecm(ARIB_STD_B25_PRIVATE_DATA *prv)
 				goto NEXT;
 			}
 
+#ifdef ENABLE_MULTI2_SIMD
+			r = proc_ecm(dec, prv->bcas, prv->multi2_round, prv->simd_instruction);
+#else
 			r = proc_ecm(dec, prv->bcas, prv->multi2_round);
+#endif
 			if(r < 0){
 				curr += unit;
 				goto LAST;
@@ -1938,7 +1972,11 @@ LAST:
 	return r;
 }
 
+#ifdef ENABLE_MULTI2_SIMD
+static int proc_ecm(DECRYPTOR_ELEM *dec, B_CAS_CARD *bcas, int32_t multi2_round, int32_t simd_instruction)
+#else
 static int proc_ecm(DECRYPTOR_ELEM *dec, B_CAS_CARD *bcas, int32_t multi2_round)
+#endif
 {
 	int r,n;
 	uint32_t len;
@@ -2005,6 +2043,9 @@ static int proc_ecm(DECRYPTOR_ELEM *dec, B_CAS_CARD *bcas, int32_t multi2_round)
 
 	if(dec->m2 == NULL){
 		dec->m2 = create_multi2();
+#ifdef ENABLE_MULTI2_SIMD
+		dec->m2->set_simd(dec->m2, (enum INSTRUCTION_TYPE)simd_instruction);
+#endif
 		if(dec->m2 == NULL){
 			return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 		}
@@ -2156,7 +2197,11 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 			if(m == 0){
 				goto NEXT;
 			}
+#ifdef ENABLE_MULTI2_SIMD
+			r = proc_ecm(dec, prv->bcas, prv->multi2_round, prv->simd_instruction);
+#else
 			r = proc_ecm(dec, prv->bcas, prv->multi2_round);
+#endif
 			if(r < 0){
 				return r;
 			}
@@ -2708,7 +2753,8 @@ static int reserve_work_buffer(TS_WORK_BUFFER *buf, intptr_t size)
 		n += n;
 	}
 
-	p = (uint8_t *)malloc(n);
+	//p = (uint8_t *)malloc(n);
+	p = (uint8_t *)mem_aligned_alloc(n);
 	if(p == NULL){
 		return 0;
 	}
@@ -2719,7 +2765,8 @@ static int reserve_work_buffer(TS_WORK_BUFFER *buf, intptr_t size)
 		if(m > 0){
 			memcpy(p, buf->head, m);
 		}
-		free(buf->pool);
+		//free(buf->pool);
+		mem_aligned_free(buf->pool);
 		buf->pool = NULL;
 	}
 
@@ -2763,7 +2810,8 @@ static void reset_work_buffer(TS_WORK_BUFFER *buf)
 static void release_work_buffer(TS_WORK_BUFFER *buf)
 {
 	if(buf->pool != NULL){
-		free(buf->pool);
+		//free(buf->pool);
+		mem_aligned_free(buf->pool);
 	}
 	buf->pool = NULL;
 	buf->head = NULL;

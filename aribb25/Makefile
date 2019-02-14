@@ -17,7 +17,7 @@ CFLAGS = -O2 -fPIC -Wall $(PCSC_CFLAGS) -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=
 LIBS   = $(PCSC_LDLIBS)
 LDFLAGS =
 
-OBJS  = arib_std_b25.o b_cas_card.o multi2.o ts_section_parser.o
+OBJS  = arib_std_b25.o b_cas_card.o multi2.o multi2_simd.o ts_section_parser.o
 HEADERS = arib_std_b25.h arib_std_b25_error_code.h b_cas_card.h portable.h
 TARGET_APP = b25
 TARGET_LIB = libaribb25.so

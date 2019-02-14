@@ -27,6 +27,7 @@ public:
 	virtual void DiscardScramblePacket(const bool bEnable = true);
 	virtual void EnableEmmProcess(const bool bEnable = true);
 	virtual void SetMulti2Round(const int32_t round = 4);
+	virtual void SetSimdMode(const int32_t instruction = 2);
 	virtual const DWORD GetDescramblingState(const WORD wProgramID);
 	virtual void ResetStatistics(void);
 	virtual const DWORD GetPacketStride(void);

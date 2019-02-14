@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "multi2.h"
+#include "multi2_simd.h"
 #include "multi2_error_code.h"
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -35,8 +36,9 @@ typedef struct {
 } CORE_PARAM;
 
 typedef struct {
-	uint32_t l;
+	// change for 64bit bswap
 	uint32_t r;
+	uint32_t l;
 } CORE_DATA;
 
 typedef struct {
@@ -51,6 +53,8 @@ typedef struct {
 
 	uint32_t   round;
 	uint32_t   state;
+
+	MULTI2_SIMD_DATA *simd;
 
 } MULTI2_PRIVATE_DATA;
 
@@ -67,12 +71,14 @@ typedef struct {
 static void release_multi2(void *m2);
 static int add_ref_multi2(void *m2);
 static int set_round_multi2(void *m2, int32_t val);
+static int set_simd_multi2(void *m2, enum INSTRUCTION_TYPE);
 static int set_system_key_multi2(void *m2, uint8_t *val);
 static int set_init_cbc_multi2(void *m2, uint8_t *val);
 static int set_scramble_key_multi2(void *m2, uint8_t *val);
 static int clear_scramble_key_multi2(void *m2);
 static int encrypt_multi2(void *m2, int32_t type, uint8_t *buf, int32_t size);
 static int decrypt_multi2(void *m2, int32_t type, uint8_t *buf, intptr_t size);
+static int decrypt_with_simd_multi2(void *m2, int32_t type, uint8_t *buf, intptr_t size);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  global function implementation
@@ -97,10 +103,12 @@ MULTI2 *create_multi2(void)
 
 	prv->ref_count = 1;
 	prv->round = 4;
+	prv->simd = NULL;
 
 	r->release = release_multi2;
 	r->add_ref = add_ref_multi2;
 	r->set_round = set_round_multi2;
+	r->set_simd = set_simd_multi2;
 	r->set_system_key = set_system_key_multi2;
 	r->set_init_cbc = set_init_cbc_multi2;
 	r->set_scramble_key = set_scramble_key_multi2;
@@ -126,6 +134,9 @@ static void core_pi2(CORE_DATA *dst, CORE_DATA *src, uint32_t a);
 static void core_pi3(CORE_DATA *dst, CORE_DATA *src, uint32_t a, uint32_t b);
 static void core_pi4(CORE_DATA *dst, CORE_DATA *src, uint32_t a);
 
+static void alloc_data_for_simd(MULTI2_PRIVATE_DATA *prv);
+static void release_data_for_simd(MULTI2_PRIVATE_DATA *prv);
+
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  interface method implementation
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -141,6 +152,7 @@ static void release_multi2(void *m2)
 
 	prv->ref_count -= 1;
 	if(prv->ref_count == 0){
+		release_data_for_simd(prv);
 		free(prv);
 	}
 }
@@ -170,14 +182,57 @@ static int set_round_multi2(void *m2, int32_t val)
 	}
 
 	prv->round = val;
+	set_round_for_simd(val);
 
 	return 0;
 }
 
+static int set_simd_multi2(void *m2, enum INSTRUCTION_TYPE instruction)
+{
+	MULTI2_PRIVATE_DATA *prv;
+	MULTI2 *r;
+	MULTI2_SIMD_DATA *simd;
+
+	prv = private_data(m2);
+	simd = prv->simd;
+
+	if( instruction == get_simd_instruction() ){
+		if( (simd != NULL) || (instruction == INSTRUCTION_NORMAL) ){
+			return 0;
+		}
+	}
+
+	r = (MULTI2 *)(prv+1);
+	if( initialize_multi2_simd(instruction, m2) ){
+		r->decrypt = decrypt_with_simd_multi2;
+		if(simd == NULL){
+			alloc_data_for_simd(prv);
+			simd = prv->simd;
+		}
+		instruction = get_simd_instruction();
+		if(instruction == INSTRUCTION_AVX2){
+			simd->decrypt = decrypt_multi2_with_avx2;
+		}else if(instruction == INSTRUCTION_SSSE3){
+			simd->decrypt = decrypt_multi2_with_ssse3;
+		}else if(instruction == INSTRUCTION_SSE2){
+			simd->decrypt = decrypt_multi2_with_sse2;
+		}else{
+			simd->decrypt = decrypt_multi2_without_simd;
+		}
+		return 0;
+	}else{
+		r->decrypt = decrypt_multi2;
+		release_data_for_simd(prv);
+		return MULTI2_ERROR_INVALID_PARAMETER;
+	}
+}
+
 static int set_system_key_multi2(void *m2, uint8_t *val)
 {
+#ifndef USE_MULTI2_INTRINSIC
 	int i;
 	uint8_t *p;
+#endif
 
 	MULTI2_PRIVATE_DATA *prv;
 
@@ -186,10 +241,14 @@ static int set_system_key_multi2(void *m2, uint8_t *val)
 		return MULTI2_ERROR_INVALID_PARAMETER;
 	}
 
+#ifdef USE_MULTI2_INTRINSIC
+	set_system_key_with_bswap((MULTI2_SIMD_SYS_KEY *)&(prv->sys), val);
+#else
 	p = val;
 	for(i=0;i<8;i++){
 		p = load_be_uint32(prv->sys.key+i, p);
 	}
+#endif
 
 	prv->state |= MULTI2_STATE_SYSTEM_KEY_SET;
 
@@ -209,8 +268,12 @@ static int set_init_cbc_multi2(void *m2, uint8_t *val)
 
 	p = val;
 
+#ifdef USE_MULTI2_INTRINSIC
+	set_data_key_with_bswap((MULTI2_SIMD_DATA_KEY *)&(prv->cbc_init), p);
+#else
 	p = load_be_uint32(&(prv->cbc_init.l), p);
 	p = load_be_uint32(&(prv->cbc_init.r), p);
+#endif
 
 	prv->state |= MULTI2_STATE_CBC_INIT_SET;
 
@@ -222,6 +285,9 @@ static int set_scramble_key_multi2(void *m2, uint8_t *val)
 	uint8_t *p;
 
 	MULTI2_PRIVATE_DATA *prv;
+#ifdef ENABLE_MULTI2_SIMD
+	MULTI2_SIMD_DATA *simd;
+#endif
 
 	prv = private_data(m2);
 	if( (prv == NULL) || (val == NULL) ){
@@ -230,13 +296,31 @@ static int set_scramble_key_multi2(void *m2, uint8_t *val)
 
 	p = val;
 
+#ifdef USE_MULTI2_INTRINSIC
+	set_data_key_with_bswap((MULTI2_SIMD_DATA_KEY *)&(prv->scr[0]), p);
+	set_data_key_with_bswap((MULTI2_SIMD_DATA_KEY *)&(prv->scr[1]), p+8);
+#else
 	p = load_be_uint32(&(prv->scr[0].l), p);
 	p = load_be_uint32(&(prv->scr[0].r), p);
 	p = load_be_uint32(&(prv->scr[1].l), p);
 	p = load_be_uint32(&(prv->scr[1].r), p);
+#endif
 
 	core_schedule(prv->wrk+0, &(prv->sys), prv->scr+0);
 	core_schedule(prv->wrk+1, &(prv->sys), prv->scr+1);
+
+#ifdef ENABLE_MULTI2_SIMD
+	simd = prv->simd;
+	if(simd != NULL){
+		if(get_simd_instruction() == INSTRUCTION_AVX2){
+			set_work_key_for_avx2(simd->wrk+0, (MULTI2_SIMD_SYS_KEY *)(prv->wrk+0));
+			set_work_key_for_avx2(simd->wrk+1, (MULTI2_SIMD_SYS_KEY *)(prv->wrk+1));
+		}else{
+			set_work_key_for_simd(simd->wrk+0, (MULTI2_SIMD_SYS_KEY *)(prv->wrk+0));
+			set_work_key_for_simd(simd->wrk+1, (MULTI2_SIMD_SYS_KEY *)(prv->wrk+1));
+		}
+	}
+#endif
 
 	prv->state |= MULTI2_STATE_SCRAMBLE_KEY_SET;
 
@@ -390,6 +474,45 @@ static int decrypt_multi2(void *m2, int32_t type, uint8_t *buf, intptr_t size)
 	return 0;
 }
 
+static int decrypt_with_simd_multi2(void *m2, int32_t type, uint8_t *buf, intptr_t size)
+{
+	MULTI2_SIMD_DATA *simd;
+	MULTI2_SIMD_SYS_KEY *prm;
+	MULTI2_SIMD_WORK_KEY *pck_wrk_key;
+
+	MULTI2_PRIVATE_DATA *prv;
+
+	prv = private_data(m2);
+	if( (prv == NULL) || (buf == NULL) || (size < 1) ){
+		return MULTI2_ERROR_INVALID_PARAMETER;
+	}
+
+	if(prv->state != (MULTI2_STATE_CBC_INIT_SET|MULTI2_STATE_SYSTEM_KEY_SET|MULTI2_STATE_SCRAMBLE_KEY_SET)){
+		if( (prv->state & MULTI2_STATE_CBC_INIT_SET) == 0 ){
+			return MULTI2_ERROR_UNSET_CBC_INIT;
+		}
+		if( (prv->state & MULTI2_STATE_SYSTEM_KEY_SET) == 0 ){
+			return MULTI2_ERROR_UNSET_SYSTEM_KEY;
+		}
+		if( (prv->state & MULTI2_STATE_SCRAMBLE_KEY_SET) == 0 ){
+			return MULTI2_ERROR_UNSET_SCRAMBLE_KEY;
+		}
+	}
+
+	simd = prv->simd;
+	if(type == 0x02){
+		prm = (MULTI2_SIMD_SYS_KEY *)(prv->wrk+1);
+		pck_wrk_key = simd->wrk+1;
+	}else{
+		prm = (MULTI2_SIMD_SYS_KEY *)(prv->wrk+0);
+		pck_wrk_key = simd->wrk+0;
+	}
+
+	simd->decrypt(buf, (uint32_t)size, prm, pck_wrk_key, (MULTI2_SIMD_DATA_KEY *)(&prv->cbc_init));
+
+	return 0;
+}
+
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  private method implementation
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -524,4 +647,18 @@ static void core_pi4(CORE_DATA *dst, CORE_DATA *src, uint32_t a)
 
 	dst->l = src->l ^ t1;
 	dst->r = src->r;
+}
+
+void alloc_data_for_simd(MULTI2_PRIVATE_DATA *prv)
+{
+	release_data_for_simd(prv);
+	prv->simd = (MULTI2_SIMD_DATA *)mem_aligned_alloc(sizeof(MULTI2_SIMD_DATA));
+}
+
+void release_data_for_simd(MULTI2_PRIVATE_DATA *prv)
+{
+	if(prv->simd != NULL){
+		mem_aligned_free(prv->simd);
+		prv->simd = NULL;
+	}
 }
