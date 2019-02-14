@@ -320,6 +320,7 @@ static int set_multi2_round_arib_std_b25(void *std_b25, int32_t round);
 static int set_strip_arib_std_b25(void *std_b25, int32_t strip);
 static int set_emm_proc_arib_std_b25(void *std_b25, int32_t on);
 static int set_simd_mode_arib_std_b25(void *std_b25, int32_t instruction);
+static int32_t get_simd_mode_arib_std_b25(void *std_b25);
 static int set_b_cas_card_arib_std_b25(void *std_b25, B_CAS_CARD *bcas);
 static int set_unit_size_arib_std_b25(void *std_b25, int size);
 static int reset_arib_std_b25(void *std_b25);
@@ -349,7 +350,9 @@ ARIB_STD_B25 *create_arib_std_b25(void)
 	}
 
 	prv->multi2_round = 4;
+#ifdef ENABLE_MULTI2_SIMD
 	prv->simd_instruction = (int32_t)get_supported_simd_instruction();
+#endif
 
 	r = (ARIB_STD_B25 *)(prv+1);
 	r->private_data = prv;
@@ -482,7 +485,22 @@ static int set_emm_proc_arib_std_b25(void *std_b25, int32_t on)
 	return 0;
 }
 
-static int set_simd_mode_arib_std_b25(void * std_b25, int32_t instruction)
+static int set_simd_mode_arib_std_b25(void *std_b25, int32_t instruction)
+{
+#ifdef ENABLE_MULTI2_SIMD
+	ARIB_STD_B25_PRIVATE_DATA *prv;
+
+	prv = private_data(std_b25);
+	if((prv == NULL) || (instruction < INSTRUCTION_NORMAL) || (instruction > INSTRUCTION_AVX2)){
+		return ARIB_STD_B25_ERROR_INVALID_PARAM;
+	}
+
+	prv->simd_instruction = instruction;
+#endif
+	return 0;
+}
+
+int32_t get_simd_mode_arib_std_b25(void *std_b25)
 {
 #ifdef ENABLE_MULTI2_SIMD
 	ARIB_STD_B25_PRIVATE_DATA *prv;
@@ -492,9 +510,10 @@ static int set_simd_mode_arib_std_b25(void * std_b25, int32_t instruction)
 		return ARIB_STD_B25_ERROR_INVALID_PARAM;
 	}
 
-	prv->simd_instruction = instruction;
+	return prv->simd_instruction;
+#else
+	return INSTRUCTION_NORMAL;
 #endif
-	return 0;
 }
 
 static int set_b_cas_card_arib_std_b25(void *std_b25, B_CAS_CARD *bcas)

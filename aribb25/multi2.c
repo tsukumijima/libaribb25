@@ -189,6 +189,7 @@ static int set_round_multi2(void *m2, int32_t val)
 
 static int set_simd_multi2(void *m2, enum INSTRUCTION_TYPE instruction)
 {
+#ifdef ENABLE_MULTI2_SIMD
 	MULTI2_PRIVATE_DATA *prv;
 	MULTI2 *r;
 	MULTI2_SIMD_DATA *simd;
@@ -225,6 +226,7 @@ static int set_simd_multi2(void *m2, enum INSTRUCTION_TYPE instruction)
 		release_data_for_simd(prv);
 		return MULTI2_ERROR_INVALID_PARAMETER;
 	}
+#endif	/* ENABLE_MULTI2_SIMD */
 }
 
 static int set_system_key_multi2(void *m2, uint8_t *val)
