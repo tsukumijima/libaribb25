@@ -58,6 +58,10 @@ extern "C" {
 
 extern ARIB_STD_B25 *create_arib_std_b25(void);
 
+#ifdef USE_BENCHMARK
+extern int test_multi2_decryption(void *std_b25, int64_t *time, int32_t instructin, int32_t round);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

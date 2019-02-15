@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <math.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -40,12 +41,15 @@ typedef struct {
 	int32_t emm;
 	int32_t verbose;
 	int32_t power_ctrl;
+	int32_t simd_instruction;
+	int32_t benchmark;
 } OPTION;
 
 static void show_usage();
 static int parse_arg(OPTION *dst, int argc, TCHAR **argv);
 static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt);
 static void show_bcas_power_on_control_info(B_CAS_CARD *bcas);
+static void run_multi2_benchmark_test(OPTION *opt);
 
 int _tmain(int argc, TCHAR **argv)
 {
@@ -63,8 +67,12 @@ int _tmain(int argc, TCHAR **argv)
 	#endif
 
 	n = parse_arg(&opt, argc, argv);
-	if(n+2 > argc){
+	if(n+2 > argc && opt.benchmark == 0){
 		show_usage();
+		exit(EXIT_FAILURE);
+	}
+	if(opt.benchmark == 1){
+		run_multi2_benchmark_test(&opt);
 		exit(EXIT_FAILURE);
 	}
 
@@ -97,6 +105,12 @@ static void show_usage()
 	_ftprintf(stderr, _T("  -v verbose\n"));
 	_ftprintf(stderr, _T("     0: silent\n"));
 	_ftprintf(stderr, _T("     1: show processing status (default)\n"));
+	_ftprintf(stderr, _T("  -i instruction\n"));
+	_ftprintf(stderr, _T("     0: use no SIMD instruction\n"));
+	_ftprintf(stderr, _T("     1: use SSE2 instruction if available\n"));
+	_ftprintf(stderr, _T("     2: use SSSE3 instruction if available\n"));
+	_ftprintf(stderr, _T("     3: use AVX2 instruction if available (default)\n"));
+	_ftprintf(stderr, _T("  -b MULTI2 benchmark test for SIMD\n"));
 	_ftprintf(stderr, _T("\n"));
 }
 
@@ -109,6 +123,8 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 	dst->emm = 0;
 	dst->power_ctrl = 1;
 	dst->verbose = 1;
+	dst->simd_instruction = 3;
+	dst->benchmark = 0;
 
 	for(i=1;i<argc;i++){
 		if(argv[i][0] != '-'){
@@ -154,6 +170,17 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 				dst->verbose = _ttoi(argv[i+1]);
 				i += 1;
 			}
+			break;
+		case 'i':
+			if(argv[i][2]){
+				dst->simd_instruction = _ttoi(argv[i]+2);
+			}else{
+				dst->simd_instruction = _ttoi(argv[i+1]);
+				i += 1;
+			}
+			break;
+		case 'b':
+			dst->benchmark = 1;
 			break;
 		default:
 			_ftprintf(stderr, _T("error - unknown option '-%c'\n"), argv[i][1]);
@@ -227,6 +254,12 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	code = b25->set_emm_proc(b25, opt->emm);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_emm_proc() : code=%d\n"), code);
+		goto LAST;
+	}
+
+	code = b25->set_simd_mode(b25, opt->simd_instruction);
+	if(code < 0){
+		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_simd_mode() : code=%d\n"), code);
 		goto LAST;
 	}
 
@@ -464,3 +497,87 @@ static void show_bcas_power_on_control_info(B_CAS_CARD *bcas)
 		_ftprintf(stdout, _T("least %d hours\n"), pwc.data[i].hold_time);
 	}
 }
+
+#ifdef USE_BENCHMARK
+#define BENCHMARK_ROUND 200000
+#define MAX_INSTRUCTION 4
+static void run_multi2_benchmark_test(OPTION *opt)
+{
+	int code;
+
+	const TCHAR *INSTRUCTION_NAMES[MAX_INSTRUCTION] = {_T("normal"), _T("SSE2"), _T("SSSE3"), _T("AVX2")};
+	int64_t totals[MAX_INSTRUCTION];
+	int64_t base_time;
+	int64_t max_time;
+	int32_t time_percentage;
+	int32_t supported_mode;
+	uint32_t test_count;
+
+	ARIB_STD_B25 *b25;
+
+	b25 = create_arib_std_b25();
+	if(b25 == NULL){
+		_ftprintf(stderr, _T("error - failed on create_arib_std_b25()\n"));
+		goto LAST;
+	}
+	supported_mode = b25->get_simd_mode(b25);
+
+	code = b25->set_multi2_round(b25, opt->round);
+	if(code < 0){
+		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_multi2_round() : code=%d\n"), code);
+		goto LAST;
+	}
+
+	code = b25->set_strip(b25, opt->strip);
+	if(code < 0){
+		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_strip() : code=%d\n"), code);
+		goto LAST;
+	}
+
+	_ftprintf(stdout, _T("running - MULTI2 benchmark test\n"));
+
+	memset(totals, 0, sizeof(totals));
+	max_time = INT64_MIN;
+	test_count = 0;
+	do{
+		for(int32_t i=0;i<MAX_INSTRUCTION;i++){
+			code = test_multi2_decryption(b25, &totals[i], i, BENCHMARK_ROUND);
+			if(code >= 0){
+				if(totals[i] > max_time){
+					max_time = totals[i];
+				}
+			}
+		}
+		test_count += BENCHMARK_ROUND;
+	}while(max_time < 1500);
+
+	_ftprintf(stdout, _T("complete - MULTI2 benchmark test (count=%u)\n"), test_count);
+	base_time = totals[0];
+	for(int32_t i=0;i<MAX_INSTRUCTION;i++){
+		_ftprintf(stdout, _T("  %-6s: %5" PRId64 " ms [%8d packets/s]"), INSTRUCTION_NAMES[i], totals[i], (int32_t)round(test_count*1000LL/(double)totals[i]));
+		if(i == 0){
+			_ftprintf(stdout, _T("\n"));
+			continue;
+		}
+		if(totals[i] < base_time){
+			time_percentage =  (int32_t)(base_time*100/totals[i]) - 100;
+		}else{
+			time_percentage = -(int32_t)(totals[i]*100/base_time) - 100;
+		}
+		
+		_ftprintf(stdout, _T(" (%3d%% faster)\n"), time_percentage);
+	}
+
+LAST:
+
+	if(b25 != NULL){
+		b25->release(b25);
+		b25 = NULL;
+	}
+}
+#else
+static void run_multi2_benchmark_test(OPTION *opt)
+{
+	_ftprintf(stdout, _T("MULTI2 benchmark test is disabled\n"));
+}
+#endif

@@ -9,6 +9,16 @@
 #include "ts_common_types.h"
 #include "ts_section_parser.h"
 
+#ifdef USE_BENCHMARK
+	#if defined(_WIN32)
+		#include <windows.h>
+		#pragma comment(lib, "winmm.lib")
+	#else
+		#include <sys/time.h>
+	#endif
+#endif
+
+
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  inner structures
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -427,6 +437,8 @@ static void extract_emm_fixed_part(EMM_FIXED_PART *dst, uint8_t *src);
 
 static uint8_t *resync(uint8_t *head, uint8_t *tail, int32_t unit);
 static uint8_t *resync_force(uint8_t *head, uint8_t *tail, int32_t unit);
+
+static void fill_random_bytes(uint8_t *data, size_t size);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  interface method implementation
@@ -2918,3 +2930,79 @@ static uint8_t *resync_force(uint8_t *head, uint8_t *tail, int32_t unit_size)
 
 	return NULL;
 }
+
+void fill_random_bytes(uint8_t *data, size_t size)
+{
+	uint8_t mask = 0xFF;
+
+	srand(1234);
+	for(size_t i=0;i<size;i++){
+		data[i] = (uint8_t)(rand() & mask);
+	}
+}
+
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ test function implementation
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+#ifdef USE_BENCHMARK
+#define PACKETS_PER_SEC 10000
+int test_multi2_decryption(void *std_b25, int64_t *time, int32_t instruction, int32_t round)
+{
+	uint8_t system_key[32];
+	uint8_t init_cbc[8];
+	uint8_t scramble_key[4][16];
+	uint8_t test_data[192];
+#if defined(_WIN32)
+	int32_t start_time = 0;
+#else
+	struct timeval start_time,end_time;
+#endif
+	int32_t type = 2;
+
+	MULTI2 *m2;
+	ARIB_STD_B25_PRIVATE_DATA *prv;
+
+	prv = private_data(std_b25);
+	if(prv == NULL){
+		return ARIB_STD_B25_ERROR_INVALID_PARAM;
+	}
+
+	m2 = create_multi2();
+	if(m2 == NULL){
+		return ARIB_STD_B25_ERROR_INVALID_PARAM;
+	}
+
+	fill_random_bytes(system_key,          sizeof(system_key));
+	fill_random_bytes(init_cbc,            sizeof(init_cbc));
+	fill_random_bytes(&scramble_key[0][0], sizeof(scramble_key));
+	fill_random_bytes(test_data,           sizeof(test_data));
+
+	m2->set_simd(m2, (enum INSTRUCTION_TYPE)instruction);
+	m2->set_system_key(m2, system_key);
+	m2->set_init_cbc(m2, init_cbc);
+	m2->set_round(m2, prv->multi2_round);
+
+#if defined(_WIN32)
+	start_time = timeGetTime();
+#else
+	gettimeofday(&start_time, NULL);
+#endif
+	for(int32_t i=0;i<round;i++){
+		if(i % PACKETS_PER_SEC == 0){
+			m2->set_scramble_key(m2, scramble_key[(i/PACKETS_PER_SEC) % (sizeof(scramble_key)/sizeof(scramble_key[0]))]);
+			type = type == 2 ? 3 : 2;
+		}
+		m2->decrypt(m2, type, test_data, 184);
+	}
+#if defined(_WIN32)
+	*time += timeGetTime() - start_time;
+#else
+	gettimeofday(&end_time, NULL);
+	*time  = (int64_t)(start_time.tv_sec  - end_time.tv_sec)  * 1000;
+	*time += (int64_t)(start_time.tv_usec - end_time.tv_usec) / 1000;
+#endif
+
+	m2->release(m2);
+	return 0;
+}
+#endif
