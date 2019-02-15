@@ -362,6 +362,7 @@ ARIB_STD_B25 *create_arib_std_b25(void)
 	r->set_strip = set_strip_arib_std_b25;
 	r->set_emm_proc = set_emm_proc_arib_std_b25;
 	r->set_simd_mode = set_simd_mode_arib_std_b25;
+	r->get_simd_mode = get_simd_mode_arib_std_b25;
 	r->set_b_cas_card = set_b_cas_card_arib_std_b25;
 	r->set_unit_size = set_unit_size_arib_std_b25;
 	r->reset = reset_arib_std_b25;
