@@ -1559,10 +1559,6 @@ void decrypt_multi2_with_avx2(uint8_t * __restrict data, const uint32_t size,
 #else
 	if (__builtin_expect(size == 184, 1)) {
 #endif
-		// copy and zero-fill last 8 bytes, because this proccess descrambles 192 bytes
-		ALIGNAS(32) uint8_t backup[8];
-		memcpy(backup, data + 184, 8);
-		memset(data + 184, 0, 8);
 
 #ifndef OPTIMIZE_MULTI2_FOR_PIPELINE
 
@@ -1629,8 +1625,8 @@ void decrypt_multi2_with_avx2(uint8_t * __restrict data, const uint32_t size,
 		src2 = _mm256_loadu_si256((__m256i*)(p +  32));
 		src3 = _mm256_loadu_si256((__m256i*)(p +  64));
 		src4 = _mm256_loadu_si256((__m256i*)(p +  96));
-		src5 = _mm256_loadu_si256((__m256i*)(p + 128));
-		src6 = _mm256_loadu_si256((__m256i*)(p + 160));
+		src5 = _mm256_loadu_si256((__m256i*)(p + 128 - 8));
+		src6 = _mm256_loadu_si256((__m256i*)(p + 160 - 8));
 
 		x1 = _mm256_shuffle_epi8(src1, src_swap_mask_avx2);
 		y1 = _mm256_shuffle_epi8(src2, src_swap_mask_avx2);
@@ -1688,8 +1684,8 @@ void decrypt_multi2_with_avx2(uint8_t * __restrict data, const uint32_t size,
 		src2 = _mm256_loadu_si256((__m256i*)(p +  32 - 8));
 		src3 = _mm256_loadu_si256((__m256i*)(p +  64 - 8));
 		src4 = _mm256_loadu_si256((__m256i*)(p +  96 - 8));
-		src5 = _mm256_loadu_si256((__m256i*)(p + 128 - 8));
-		src6 = _mm256_loadu_si256((__m256i*)(p + 160 - 8));
+		src5 = _mm256_loadu_si256((__m256i*)(p + 128 - 8 - 8));
+		src6 = _mm256_loadu_si256((__m256i*)(p + 160 - 8 - 8));
 		x1 = _mm256_xor_si256(x1, _mm256_or_si256(cbc, shift_leftsi64_m256i(src1)));
 		y1 = _mm256_xor_si256(y1, src2);
 		x2 = _mm256_xor_si256(x2, src3);
@@ -1697,17 +1693,15 @@ void decrypt_multi2_with_avx2(uint8_t * __restrict data, const uint32_t size,
 		x3 = _mm256_xor_si256(x3, src5);
 		y3 = _mm256_xor_si256(y3, src6);
 
-		_mm256_storeu_si256((__m256i*)(p +  0),  x1);
-		_mm256_storeu_si256((__m256i*)(p + 32),  y1);
-		_mm256_storeu_si256((__m256i*)(p + 64),  x2);
-		_mm256_storeu_si256((__m256i*)(p + 96),  y2);
-		_mm256_storeu_si256((__m256i*)(p + 128), x3);
-		_mm256_storeu_si256((__m256i*)(p + 160), y3);
+		_mm256_storeu_si256((__m256i*)(p +  0),      x1);
+		_mm256_storeu_si256((__m256i*)(p + 32),      y1);
+		_mm256_storeu_si256((__m256i*)(p + 64),      x2);
+		_mm256_storeu_si256((__m256i*)(p + 96),      y2);
+		_mm256_storeu_si256((__m256i*)(p + 128 - 8), x3);
+		_mm256_storeu_si256((__m256i*)(p + 160 - 8), y3);
 
 #endif	// OPTIMIZE_MULTI2_FOR_PIPELINE
 
-		// restore last 8 bytes from backup
-		memcpy(data + 184, backup, 8);
 		return;
 	}
 
