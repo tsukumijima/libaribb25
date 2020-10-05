@@ -322,6 +322,7 @@ static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf);
 static int get_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf);
 static int get_program_count_arib_std_b25(void *std_b25);
 static int get_program_info_arib_std_b25(void *std_b25, ARIB_STD_B25_PROGRAM_INFO *info, int idx);
+static int withdraw_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  global function implementation
@@ -357,6 +358,7 @@ ARIB25_API_EXPORT ARIB_STD_B25 *create_arib_std_b25()
 	r->get = get_arib_std_b25;
 	r->get_program_count = get_program_count_arib_std_b25;
 	r->get_program_info = get_program_info_arib_std_b25;
+	r->withdraw = withdraw_arib_std_b25;
 
 	return r;
 }
@@ -628,7 +630,12 @@ static int flush_arib_std_b25(void *std_b25)
 					m = dec->m2->decrypt(dec->m2, crypt, p, n);
 					if(m < 0){
 						r = ARIB_STD_B25_ERROR_DECRYPT_FAILURE;
-						curr += unit;
+						if((curr+unit) <= tail){
+							l = unit;
+						}else{
+							l = 188;
+						}
+						curr += l;
 						goto LAST;
 					}
 					curr[3] &= 0x3f;
@@ -659,19 +666,34 @@ static int flush_arib_std_b25(void *std_b25)
 			if( (dec == NULL) || (dec->ecm == NULL) ){
 				/* this code will never execute */
 				r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			m = dec->ecm->put(dec->ecm, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			m = dec->ecm->get_count(dec->ecm);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			if(m == 0){
@@ -679,7 +701,12 @@ static int flush_arib_std_b25(void *std_b25)
 			}
 			r = proc_ecm(dec, prv->bcas, prv->multi2_round);
 			if(r < 0){
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 		}else if(prv->map[pid].type == PID_MAP_TYPE_PMT){
@@ -687,19 +714,34 @@ static int flush_arib_std_b25(void *std_b25)
 			if( (pgrm == NULL) || (pgrm->pmt == NULL) ){
 				/* this code will never execute */
 				r = ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			m = pgrm->pmt->put(pgrm->pmt, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			m = pgrm->pmt->get_count(pgrm->pmt);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			if(m == 0){
@@ -707,7 +749,12 @@ static int flush_arib_std_b25(void *std_b25)
 			}
 			r = proc_pmt(prv, pgrm);
 			if(r < 0){
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 		}else if(prv->map[pid].type == PID_MAP_TYPE_EMM){
@@ -724,13 +771,23 @@ static int flush_arib_std_b25(void *std_b25)
 			m = prv->emm->put(prv->emm, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_EMM_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			m = prv->emm->get_count(prv->emm);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_EMM_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			if(m == 0){
@@ -738,7 +795,12 @@ static int flush_arib_std_b25(void *std_b25)
 			}
 			r = proc_emm(prv);
 			if(r < 0){
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 		}else if(pid == 0x0001){
@@ -752,13 +814,23 @@ static int flush_arib_std_b25(void *std_b25)
 			m = prv->cat->put(prv->cat, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_CAT_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			m = prv->cat->get_count(prv->cat);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_CAT_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			if(m == 0){
@@ -766,7 +838,12 @@ static int flush_arib_std_b25(void *std_b25)
 			}
 			r = proc_cat(prv);
 			if(r < 0){
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 		}else if(pid == 0x0000){
@@ -780,13 +857,23 @@ static int flush_arib_std_b25(void *std_b25)
 			m = prv->pat->put(prv->pat, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_PAT_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			m = prv->pat->get_count(prv->pat);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_PAT_PARSE_FAILURE;
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 			if(m == 0){
@@ -794,7 +881,12 @@ static int flush_arib_std_b25(void *std_b25)
 			}
 			r = proc_pat(prv);
 			if(r < 0){
-				curr += unit;
+				if((curr+unit) <= tail){
+					l = unit;
+				}else{
+					l = 188;
+				}
+				curr += l;
 				goto LAST;
 			}
 		}
@@ -823,8 +915,8 @@ LAST:
 
 static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 {
-	int32_t n;
-	
+	int r;
+	intptr_t slen,dlen;
 	ARIB_STD_B25_PRIVATE_DATA *prv;
 
 	prv = private_data(std_b25);
@@ -832,14 +924,17 @@ static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 		return ARIB_STD_B25_ERROR_INVALID_PARAM;
 	}
 
+	slen = prv->sbuf.tail - prv->sbuf.head;
+	dlen = prv->dbuf.tail - prv->dbuf.head;
+
 	if(!append_work_buffer(&(prv->sbuf), buf->data, buf->size)){
 		return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 	}
 
 	if(prv->unit_size < 188){
-		n = select_unit_size(prv);
-		if(n < 0){
-			return n;
+		r = select_unit_size(prv);
+		if(r < 0){
+			return r;
 		}
 		if(prv->unit_size < 188){
 			/* need more data */
@@ -848,9 +943,9 @@ static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 	}
 
 	if(prv->p_count < 1){
-		n = find_pat(prv);
-		if(n < 0){
-			return n;
+		r = find_pat(prv);
+		if(r < 0){
+			return r;
 		}
 		if(prv->p_count < 1){
 			if(prv->sbuf_offset < (16*1024*1024)){
@@ -865,9 +960,9 @@ static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 	}
 
 	if(!check_pmt_complete(prv)){
-		n = find_pmt(prv);
-		if(n < 0){
-			return n;
+		r = find_pmt(prv);
+		if(r < 0){
+			return r;
 		}
 		if(!check_pmt_complete(prv)){
 			if(prv->sbuf_offset < (32*1024*1024)){
@@ -882,9 +977,9 @@ static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 	}
 
 	if(!check_ecm_complete(prv)){
-		n = find_ecm(prv);
-		if(n < 0){
-			return n;
+		r = find_ecm(prv);
+		if(r < 0){
+			return r;
 		}
 		if(!check_ecm_complete(prv)){
 			if(prv->sbuf_offset < (32*1024*1024)){
@@ -898,7 +993,13 @@ static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 		prv->sbuf_offset = 0;
 	}
 
-	return proc_arib_std_b25(prv);
+	r = proc_arib_std_b25(prv);
+	if(r < 0){
+		/* rollback */
+		prv->sbuf.tail = prv->sbuf.head + slen;
+		prv->dbuf.tail = prv->dbuf.head + dlen;
+	}
+	return r;
 }
 
 static int get_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
@@ -976,6 +1077,22 @@ static int get_program_info_arib_std_b25(void *std_b25, ARIB_STD_B25_PROGRAM_INF
 		info->undecrypted_packet_count += prv->map[pid].undecrypted;
 		strm = (TS_STREAM_ELEM *)(strm->next);
 	}
+
+	return 0;
+}
+
+static int withdraw_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
+{
+	ARIB_STD_B25_PRIVATE_DATA *prv;
+	prv = private_data(std_b25);
+	if((prv == NULL) || (buf == NULL)){
+		return ARIB_STD_B25_ERROR_INVALID_PARAM;
+	}
+
+	buf->data = prv->sbuf.head;
+	buf->size = prv->sbuf.tail - prv->sbuf.head;
+
+	reset_work_buffer(&(prv->sbuf));
 
 	return 0;
 }
@@ -2006,8 +2123,7 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 			}
 			if((p-curr) >= (unit-188)){
 				if(!append_work_buffer(&(prv->dbuf), p-(unit-188), unit-188)){
-					r = ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
-					goto LAST;
+					return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 				}
 			}
 			curr = p;
@@ -2020,8 +2136,7 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 		if(hdr.transport_error_indicator != 0){
 			/* bit error - append output buffer without parsing */
 			if(!append_work_buffer(&(prv->dbuf), curr, unit)){
-				r = ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 			}
 			goto NEXT;
 		}
@@ -2059,9 +2174,7 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 				if( (dec != NULL) && (dec->m2 != NULL) ){
 					m = dec->m2->decrypt(dec->m2, crypt, p, n);
 					if(m < 0){
-						r = ARIB_STD_B25_ERROR_DECRYPT_FAILURE;
-						curr += unit;
-						goto LAST;
+						return ARIB_STD_B25_ERROR_DECRYPT_FAILURE;
 					}
 					curr[3] &= 0x3f;
 					prv->map[pid].normal_packet += 1;
@@ -2081,65 +2194,50 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 		}
 #endif
 		if(!append_work_buffer(&(prv->dbuf), curr, unit)){
-			r = ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
-			goto LAST;
+			return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 		}
 
 		if(prv->map[pid].type == PID_MAP_TYPE_ECM){
 			dec = (DECRYPTOR_ELEM *)(prv->map[pid].target);
 			if( (dec == NULL) || (dec->ecm == NULL) ){
 				/* this code will never execute */
-				r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
 			}
 			m = dec->ecm->put(dec->ecm, &hdr, p, n);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
 			}
 			m = dec->ecm->get_count(dec->ecm);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
 			}
 			if(m == 0){
 				goto NEXT;
 			}
 			r = proc_ecm(dec, prv->bcas, prv->multi2_round);
 			if(r < 0){
-				curr += unit;
-				goto LAST;
+				return r;
 			}
 		}else if(prv->map[pid].type == PID_MAP_TYPE_PMT){
 			pgrm = (TS_PROGRAM *)(prv->map[pid].target);
 			if( (pgrm == NULL) || (pgrm->pmt == NULL) ){
 				/* this code will never execute */
-				r = ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
 			}
 			m = pgrm->pmt->put(pgrm->pmt, &hdr, p, n);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
 			}
 			m = pgrm->pmt->get_count(pgrm->pmt);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
 			}
 			if(m == 0){
 				goto NEXT;
 			}
 			r = proc_pmt(prv, pgrm);
 			if(r < 0){
-				curr += unit;
-				goto LAST;
+				return r;
 			}
 		}else if(prv->map[pid].type == PID_MAP_TYPE_EMM){
 			if( prv->emm_proc_on == 0){
@@ -2148,82 +2246,68 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 			if( prv->emm == NULL ){
 				prv->emm = create_ts_section_parser();
 				if(prv->emm == NULL){
-					r = ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
-					goto LAST;
+					return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 				}
 			}
 			m = prv->emm->put(prv->emm, &hdr, p, n);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_EMM_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_EMM_PARSE_FAILURE;
 			}
 			m = prv->emm->get_count(prv->emm);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_EMM_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_EMM_PARSE_FAILURE;
 			}
 			if(m == 0){
 				goto NEXT;
 			}
 			r = proc_emm(prv);
 			if(r < 0){
-				curr += unit;
-				goto LAST;
+				return r;
 			}
 		}else if(pid == 0x0001){
 			if( prv->cat == NULL ){
 				prv->cat = create_ts_section_parser();
 				if(prv->cat == NULL){
-					r = ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
-					goto LAST;
+					return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 				}
 			}
 			m = prv->cat->put(prv->cat, &hdr, p, n);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_CAT_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_CAT_PARSE_FAILURE;
 			}
 			m = prv->cat->get_count(prv->cat);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_CAT_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_CAT_PARSE_FAILURE;
 			}
 			if(m == 0){
 				goto NEXT;
 			}
 			r = proc_cat(prv);
 			if(r < 0){
-				curr += unit;
-				goto LAST;
+				return r;
 			}
 		}else if(pid == 0x0000){
 			if( prv->pat == NULL ){
 				prv->pat = create_ts_section_parser();
 				if(prv->pat == NULL){
-					r = ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
-					goto LAST;
+					return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 				}
 			}
 			m = prv->pat->put(prv->pat, &hdr, p, n);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_PAT_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_PAT_PARSE_FAILURE;
 			}
 			m = prv->pat->get_count(prv->pat);
 			if(m < 0){
-				r = ARIB_STD_B25_ERROR_PAT_PARSE_FAILURE;
-				curr += unit;
-				goto LAST;
+				return ARIB_STD_B25_ERROR_PAT_PARSE_FAILURE;
 			}
 			if(m == 0){
 				goto NEXT;
 			}
 			r = proc_pat(prv);
+			if(r < 0){
+				return r;
+			}
 			curr += unit;
 			goto LAST;
 		}
