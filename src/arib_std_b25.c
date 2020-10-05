@@ -612,29 +612,33 @@ static int flush_arib_std_b25(void *std_b25)
 			n = 188 - 4;
 		}
 
-		if( (crypt != 0) &&
-		    (hdr.adaptation_field_control & 0x01) ){
-			
-			if(prv->map[pid].type == PID_MAP_TYPE_OTHER){
-				dec = (DECRYPTOR_ELEM *)(prv->map[pid].target);
-			}else if( (prv->map[pid].type == 0) &&
-				  (prv->decrypt.count == 1) ){
-				dec = prv->decrypt.head;
-			}else{
-				dec = NULL;
-			}
+		if(crypt != 0){
+			if(hdr.adaptation_field_control & 0x01){
 
-			if( (dec != NULL) && (dec->m2 != NULL) ){
-				m = dec->m2->decrypt(dec->m2, crypt, p, n);
-				if(m < 0){
-					r = ARIB_STD_B25_ERROR_DECRYPT_FAILURE;
-					curr += unit;
-					goto LAST;
+				if(prv->map[pid].type == PID_MAP_TYPE_OTHER){
+					dec = (DECRYPTOR_ELEM *)(prv->map[pid].target);
+				}else if( (prv->map[pid].type == 0) &&
+					  (prv->decrypt.count == 1) ){
+					dec = prv->decrypt.head;
+				}else{
+					dec = NULL;
 				}
+
+				if( (dec != NULL) && (dec->m2 != NULL) ){
+					m = dec->m2->decrypt(dec->m2, crypt, p, n);
+					if(m < 0){
+						r = ARIB_STD_B25_ERROR_DECRYPT_FAILURE;
+						curr += unit;
+						goto LAST;
+					}
+					curr[3] &= 0x3f;
+					prv->map[pid].normal_packet += 1;
+				}else{
+					prv->map[pid].undecrypted += 1;
+				}
+			}else{
 				curr[3] &= 0x3f;
 				prv->map[pid].normal_packet += 1;
-			}else{
-				prv->map[pid].undecrypted += 1;
 			}
 		}else{
 			prv->map[pid].normal_packet += 1;
@@ -2040,29 +2044,33 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 			n = 188 - 4;
 		}
 
-		if( (crypt != 0) &&
-		    (hdr.adaptation_field_control & 0x01) ){
-			
-			if(prv->map[pid].type == PID_MAP_TYPE_OTHER){
-				dec = (DECRYPTOR_ELEM *)(prv->map[pid].target);
-			}else if( (prv->map[pid].type == 0) &&
-			          (prv->decrypt.count == 1) ){
-				dec = prv->decrypt.head;
-			}else{
-				dec = NULL;
-			}
+		if(crypt != 0){
+			if(hdr.adaptation_field_control & 0x01){
 
-			if( (dec != NULL) && (dec->m2 != NULL) ){
-				m = dec->m2->decrypt(dec->m2, crypt, p, n);
-				if(m < 0){
-					r = ARIB_STD_B25_ERROR_DECRYPT_FAILURE;
-					curr += unit;
-					goto LAST;
+				if(prv->map[pid].type == PID_MAP_TYPE_OTHER){
+					dec = (DECRYPTOR_ELEM *)(prv->map[pid].target);
+				}else if( (prv->map[pid].type == 0) &&
+				          (prv->decrypt.count == 1) ){
+					dec = prv->decrypt.head;
+				}else{
+					dec = NULL;
 				}
+
+				if( (dec != NULL) && (dec->m2 != NULL) ){
+					m = dec->m2->decrypt(dec->m2, crypt, p, n);
+					if(m < 0){
+						r = ARIB_STD_B25_ERROR_DECRYPT_FAILURE;
+						curr += unit;
+						goto LAST;
+					}
+					curr[3] &= 0x3f;
+					prv->map[pid].normal_packet += 1;
+				}else{
+					prv->map[pid].undecrypted += 1;
+				}
+			}else{
 				curr[3] &= 0x3f;
 				prv->map[pid].normal_packet += 1;
-			}else{
-				prv->map[pid].undecrypted += 1;
 			}
 		}else{
 			prv->map[pid].normal_packet += 1;
