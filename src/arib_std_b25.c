@@ -1414,10 +1414,10 @@ static int proc_pmt(ARIB_STD_B25_PRIVATE_DATA *prv, TS_PROGRAM *pgrm)
 	head += length;
 
 	/* save old streams */
-	memcpy(&tmp_old_strm, &(pgrm->old_strm), sizeof(TS_STREAM_LIST));
+	tmp_old_strm = pgrm->old_strm;
 
 	/* save current streams */
-	memcpy(&(pgrm->old_strm), &(pgrm->streams), sizeof(TS_STREAM_LIST));
+	pgrm->old_strm = pgrm->streams;
 	memset(&(pgrm->streams), 0, sizeof(TS_STREAM_LIST));
 
 	/* add current stream entries */
