@@ -2137,6 +2137,7 @@ LAST:
 			r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
 		}
 	}
+}
 
 #if defined(DEBUG)
 static void dump_pts(uint8_t *src, int32_t crypt)
