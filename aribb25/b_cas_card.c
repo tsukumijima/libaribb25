@@ -8,11 +8,15 @@
 
 #include <winscard.h>
 #if defined(_WIN32)
-	#include <windows.h>
-	#include <tchar.h>
+#  include <windows.h>
+#  include <tchar.h>
 #else
-	#define TCHAR char
-	#define _tcslen strlen
+#  define TCHAR char
+#  define _tcslen strlen
+#  if !defined(__CYGWIN__)
+#    include <wintypes.h>
+#  endif
+#  define _tcslen strlen
 #endif
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -171,7 +175,7 @@ static int init_b_cas_card(void *bcas)
 	}
 
 	prv->reader = (LPTSTR)(prv->pool);
-	prv->sbuf = (uint8_t *)(prv->reader + len);
+	prv->sbuf = prv->pool + len;
 	prv->rbuf = prv->sbuf + B_CAS_BUFFER_MAX;
 	prv->id.data = (int64_t *)(prv->rbuf + B_CAS_BUFFER_MAX);
 	prv->id_max = 16;
@@ -508,7 +512,7 @@ static int change_id_max(B_CAS_CARD_PRIVATE_DATA *prv, int max)
 	old_pwctrl = (uint8_t *)(prv->pwc.data);
 
 	prv->reader = (LPTSTR)p;
-	prv->sbuf = p + reader_size;
+	prv->sbuf = prv->pool + reader_size;
 	prv->rbuf = prv->sbuf + B_CAS_BUFFER_MAX;
 	prv->id.data = (int64_t *)(prv->rbuf + B_CAS_BUFFER_MAX);
 	prv->id_max = max;
@@ -549,7 +553,7 @@ static int change_pwc_max(B_CAS_CARD_PRIVATE_DATA *prv, int max)
 	old_cardid = (uint8_t *)(prv->id.data);
 
 	prv->reader = (LPTSTR)p;
-	prv->sbuf = p + reader_size;
+	prv->sbuf = prv->pool + reader_size;
 	prv->rbuf = prv->sbuf + B_CAS_BUFFER_MAX;
 	prv->id.data = (int64_t *)(prv->rbuf + B_CAS_BUFFER_MAX);
 	prv->pwc.data = (B_CAS_PWR_ON_CTRL *)(prv->id.data + prv->id_max);

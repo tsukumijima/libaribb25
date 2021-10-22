@@ -1,6 +1,7 @@
 #ifndef B_CAS_CARD_H
 #define B_CAS_CARD_H
 
+#include "arib25_api.h"
 #include "portable.h"
 
 typedef struct {

@@ -1,6 +1,7 @@
 #ifndef TS_SECTION_PARSER_H
 #define TS_SECTION_PARSER_H
 
+#include "arib25_api.h"
 #include "ts_common_types.h"
 
 typedef struct {

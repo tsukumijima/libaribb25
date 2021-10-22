@@ -1,0 +1,131 @@
+version: "0.2.5 build #{build}"
+shallow_clone: true
+
+environment:
+  SOLUTION: arib_std_b25.sln
+  BUILDENV: MSBUILD
+
+  MSYS2_DIR: msys64
+
+  CYGWIN_MIRROR: http://cygwin.mirror.constant.com
+  CYGWIN_PACKAGES: mpfr,mpc,gcc-core,gcc-g++,make,cmake
+
+  matrix:
+    # Latest version of VisualStudio
+    - JOB_NAME: "Visual Studio 16 2019 (Win32)"
+      CMAKE_GENERATOR: "Visual Studio 16 2019"
+      CMAKE_GENERATOR_PLATFORM: Win32
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    - JOB_NAME: "Visual Studio 16 2019 (Win64)"
+      CMAKE_GENERATOR: "Visual Studio 16 2019"
+      CMAKE_GENERATOR_PLATFORM: x64
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    - JOB_NAME: "Visual Studio 16 2019 (ARM)"
+      CMAKE_GENERATOR: "Visual Studio 16 2019"
+      CMAKE_GENERATOR_PLATFORM: ARM
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    - JOB_NAME: "Visual Studio 16 2019 (ARM64)"
+      CMAKE_GENERATOR: "Visual Studio 16 2019"
+      CMAKE_GENERATOR_PLATFORM: ARM64
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+
+    # Windows Server 2012R2 or Windows 8 or above
+    - JOB_NAME: "Visual Studio 15 2017 (Win32)"
+      CMAKE_GENERATOR: "Visual Studio 15 2017"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    - JOB_NAME: "Visual Studio 15 2017 (Win64)"
+      CMAKE_GENERATOR: "Visual Studio 15 2017 Win64"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+
+    # Windows Server 2008R2 or Windows 7 or above
+    - JOB_NAME: "Visual Studio 14 2015 (Win32)"
+      CMAKE_GENERATOR: "Visual Studio 14 2015"
+    - JOB_NAME: "Visual Studio 14 2015 (Win64)"
+      CMAKE_GENERATOR: "Visual Studio 14 2015 Win64"
+    - JOB_NAME: "Visual Studio 12 2013 (Win32)"
+      CMAKE_GENERATOR: "Visual Studio 12 2013"
+    - JOB_NAME: "Visual Studio 12 2013 (Win64)"
+      CMAKE_GENERATOR: "Visual Studio 12 2013 Win64"
+    - JOB_NAME: "Visual Studio 11 2012 (Win32)"
+      CMAKE_GENERATOR: "Visual Studio 11 2012"
+    - JOB_NAME: "Visual Studio 11 2012 (Win64)"
+      CMAKE_GENERATOR: "Visual Studio 11 2012 Win64"
+
+    # WindowsXP or above (C99 is not yet supported)
+    - JOB_NAME: "Visual Studio 10 2010 (Win32)"
+      CMAKE_GENERATOR: "Visual Studio 10 2010"
+    - JOB_NAME: "Visual Studio 10 2010 (Win64)"
+      CMAKE_GENERATOR: "Visual Studio 10 2010 Win64"
+    - JOB_NAME: "Visual Studio 9 2008 (Win32)"
+      CMAKE_GENERATOR: "Visual Studio 9 2008"
+
+    # MSYS2
+    - JOB_NAME: "MSYS2 MinGW32 (i686)"
+      CMAKE_GENERATOR: "MSYS Makefiles"
+      BUILDENV: MSYS2
+      MSYS2_ARCH: i686
+      MSYSTEM: MINGW32
+
+    - JOB_NAME: "MSYS2 MinGW64 (x86_64)"
+      CMAKE_GENERATOR: "MSYS Makefiles"
+      BUILDENV: MSYS2
+      MSYS2_ARCH: x86_64
+      MSYSTEM: MINGW64
+
+    # Cygwin
+    - JOB_NAME: "Cygwin32 (x86)"
+      CMAKE_GENERATOR: "Unix Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      BUILDENV: CYGWIN
+      CYGWIN_DIR: cygwin
+      CYGWIN_ARCH: x86
+
+    - JOB_NAME: "Cygwin64 (x86_64)"
+      CMAKE_GENERATOR: "Unix Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      BUILDENV: CYGWIN
+      CYGWIN_DIR: cygwin64
+      CYGWIN_ARCH: x86_64
+
+install:
+  - if "%BUILDENV%" == "MSYS2"
+      set MSYS2_ROOT=%HOMEDRIVE%\%MSYS2_DIR%
+  - if "%BUILDENV%" == "CYGWIN"
+      set CYGWIN_ROOT=%HOMEDRIVE%\%CYGWIN_DIR%
+
+  - if "%BUILDENV%" == "CYGWIN" (
+      appveyor
+        DownloadFile "https://cygwin.com/setup-%CYGWIN_ARCH%.exe"
+        -FileName "%CYGWIN_ROOT%/setup-%CYGWIN_ARCH%.exe" &&
+      "%CYGWIN_ROOT%/setup-%CYGWIN_ARCH%.exe"
+        -qnNdOW
+        --root "%CYGWIN_ROOT%"
+        --site "%CYGWIN_MIRROR%"
+        --local-package-dir "%CYGWIN_ROOT%/var/cache/setup"
+        --packages "%CYGWIN_PACKAGES%"
+    )
+
+before_build:
+  - mkdir build
+
+  - if "%BUILDENV%" == "MSBUILD" (
+      cd build &&
+      cmake --version &&
+      cmake ..
+    )
+
+  - if "%BUILDENV%" == "MSYS2"
+      "%MSYS2_ROOT%/usr/bin/bash" --login -c 'cd "${APPVEYOR_BUILD_FOLDER}/build"; cmake --version; cmake ..'
+
+  - if "%BUILDENV%" == "CYGWIN"
+      "%CYGWIN_ROOT%/bin/bash" --login -c 'cd "${APPVEYOR_BUILD_FOLDER}/build"; cmake --version; cmake ..'
+
+build_script:
+  - if "%BUILDENV%" == "MSBUILD"
+      msbuild "%SOLUTION%" /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+  - if "%BUILDENV%" == "MSYS2"
+      "%MSYS2_ROOT%/usr/bin/bash" --login -c 'cd "${APPVEYOR_BUILD_FOLDER}/build"; make'
+
+  - if "%BUILDENV%" == "CYGWIN"
+      "%CYGWIN_ROOT%/bin/bash" --login -c 'cd "${APPVEYOR_BUILD_FOLDER}/build"; make'

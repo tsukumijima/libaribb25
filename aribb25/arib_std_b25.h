@@ -1,6 +1,7 @@
 #ifndef ARIB_STD_B25_H
 #define ARIB_STD_B25_H
 
+#include "arib25_api.h"
 #include "portable.h"
 #include "b_cas_card.h"
 
