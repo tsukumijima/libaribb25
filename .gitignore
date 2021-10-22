@@ -239,3 +239,15 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+cmake_install.cmake
+config.h
+version.rc
+*.o
+*.dep
+*.pc
