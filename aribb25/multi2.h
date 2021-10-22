@@ -1,7 +1,7 @@
 #ifndef MULTI2_H
 #define MULTI2_H
 
-#include "arib25_api.h"
+#include "aribb25_api.h"
 #include "portable.h"
 #include "simd_instruction_type.h"
 

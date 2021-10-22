@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: @CMAKE_LIBRARY_PREFIX@@ARIBB25_LIB_NAME@
+Description: @ARIBB25_DESCRIPTION@
+URL: @ARIBB25_URL@
+Version: @ARIBB25_VERSION_STRING@
+Libs: -L${libdir} -l@ARIBB25_LIB_NAME@
+Cflags: -I${includedir}
