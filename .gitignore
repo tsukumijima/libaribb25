@@ -247,6 +247,7 @@ CMakeFiles
 CMakeScripts
 cmake_install.cmake
 config.h
+libaribb25.so*
 version.rc
 *.o
 *.dep
