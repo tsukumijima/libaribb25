@@ -103,7 +103,7 @@ if(PCSC_INCLUDE_DIRS)
 endif()
 link_directories(${PCSC_LIBRARY_DIRS})
 
-add_library(aribb25-objlib OBJECT src/arib_std_b25.c src/b_cas_card.c src/multi2.cc src/ts_section_parser.c src/version.c)
+add_library(aribb25-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.cc aribb25/ts_section_parser.c aribb25/version.c)
 set_target_properties(aribb25-objlib PROPERTIES COMPILE_DEFINITIONS ARIBB25_DLL)
 
 add_library(aribb25-static STATIC $<TARGET_OBJECTS:aribb25-objlib>)
@@ -119,20 +119,20 @@ set_target_properties(aribb25-shared PROPERTIES SOVERSION ${ARIBB25_MAJOR_VERSIO
 set_target_properties(aribb25-shared PROPERTIES VERSION ${ARIBB25_VERSION_NUMBER})
 target_link_libraries(aribb25-shared PRIVATE ${PCSC_LIBRARIES})
 
-add_executable(b25 src/td.c ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
+add_executable(b25 aribb25/td.c ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 set_target_properties(b25 PROPERTIES OUTPUT_NAME ${ARIBB25_CMD_NAME})
 target_link_libraries(b25 PRIVATE ${PCSC_LIBRARIES})
 target_link_libraries(b25 PRIVATE aribb25-shared)
 
-configure_file(src/config.h.in config.h @ONLY)
-configure_file(src/version.rc.in version.rc @ONLY)
+configure_file(aribb25/config.h.in config.h @ONLY)
+configure_file(aribb25/version.rc.in version.rc @ONLY)
 
 if(UNIX AND NOT CYGWIN)
-	configure_file(src/libaribb25.pc.in ${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}.pc @ONLY)
+	configure_file(aribb25/libaribb25.pc.in ${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}.pc @ONLY)
 
 	install(TARGETS b25 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb25-static aribb25-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-	install(FILES src/arib_std_b25.h src/b_cas_card.h src/multi2.h src/ts_section_parser.h src/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
+	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -DLDCONFIG_EXECUTABLE=${LDCONFIG_EXECUTABLE} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PostInstall.cmake)")
 	
@@ -140,6 +140,6 @@ if(UNIX AND NOT CYGWIN)
 elseif(WIN32)
 	install(TARGETS b25 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb25-static aribb25-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR})
-	install(FILES src/arib_std_b25.h src/b_cas_card.h src/multi2.h src/ts_section_parser.h src/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
+	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
 	add_custom_target(uninstall ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Uninstall.cmake)
 endif()
