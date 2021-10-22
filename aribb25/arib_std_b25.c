@@ -338,7 +338,7 @@ static int flush_arib_std_b25(void *std_b25);
 static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf);
 static int get_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf);
 static int get_program_count_arib_std_b25(void *std_b25);
-static int get_program_info_arib_std_b25(void *std_b25, ARIB_STD_B25_PROGRAM_INFO *info, int32_t idx);
+static int get_program_info_arib_std_b25(void *std_b25, ARIB_STD_B25_PROGRAM_INFO *info, int idx);
 static int withdraw_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -573,7 +573,7 @@ static int reset_arib_std_b25(void *std_b25)
 static int flush_arib_std_b25(void *std_b25)
 {
 	int r,l;
-	intptr_t m,n;
+	int m,n;
 
 	int32_t crypt;
 	int32_t unit;
@@ -643,10 +643,11 @@ static int flush_arib_std_b25(void *std_b25)
 
 		if(hdr.transport_error_indicator != 0){
 			/* bit error - append output buffer without parsing */
-			if((curr+unit) <= tail)
+			if((curr+unit) <= tail){
 				l = unit;
-			else
+			}else{
 				l = 188;
+			}
 			if(!append_work_buffer(&(prv->dbuf), curr, l)){
 				r = ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 				goto LAST;
@@ -677,7 +678,7 @@ static int flush_arib_std_b25(void *std_b25)
 				if(prv->map[pid].type == PID_MAP_TYPE_OTHER){
 					dec = (DECRYPTOR_ELEM *)(prv->map[pid].target);
 				}else if( (prv->map[pid].type == 0) &&
-						  (prv->decrypt.count == 1) ){
+					  (prv->decrypt.count == 1) ){
 					dec = prv->decrypt.head;
 				}else{
 					dec = NULL;
@@ -687,10 +688,11 @@ static int flush_arib_std_b25(void *std_b25)
 					m = dec->m2->decrypt(dec->m2, crypt, p, n);
 					if(m < 0){
 						r = ARIB_STD_B25_ERROR_DECRYPT_FAILURE;
-						if((curr+unit) <= tail)
+						if((curr+unit) <= tail){
 							l = unit;
-						else
+						}else{
 							l = 188;
+						}
 						curr += l;
 						goto LAST;
 					}
@@ -699,7 +701,6 @@ static int flush_arib_std_b25(void *std_b25)
 				}else{
 					prv->map[pid].undecrypted += 1;
 				}
-
 			}else{
 				curr[3] &= 0x3f;
 				prv->map[pid].normal_packet += 1;
@@ -708,10 +709,11 @@ static int flush_arib_std_b25(void *std_b25)
 			prv->map[pid].normal_packet += 1;
 		}
 
-		if((curr+unit) <= tail)
+		if((curr+unit) <= tail){
 			l = unit;
-		else
+		}else{
 			l = 188;
+		}
 		if(!append_work_buffer(&(prv->dbuf), curr, l)){
 			r = ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 			goto LAST;
@@ -722,30 +724,33 @@ static int flush_arib_std_b25(void *std_b25)
 			if( (dec == NULL) || (dec->ecm == NULL) ){
 				/* this code will never execute */
 				r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
 			m = dec->ecm->put(dec->ecm, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
 			m = dec->ecm->get_count(dec->ecm);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -758,10 +763,11 @@ static int flush_arib_std_b25(void *std_b25)
 			r = proc_ecm(dec, prv->bcas, prv->multi2_round);
 #endif
 			if(r < 0){
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -770,30 +776,33 @@ static int flush_arib_std_b25(void *std_b25)
 			if( (pgrm == NULL) || (pgrm->pmt == NULL) ){
 				/* this code will never execute */
 				r = ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
 			m = pgrm->pmt->put(pgrm->pmt, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
 			m = pgrm->pmt->get_count(pgrm->pmt);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_PMT_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -802,10 +811,11 @@ static int flush_arib_std_b25(void *std_b25)
 			}
 			r = proc_pmt(prv, pgrm);
 			if(r < 0){
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -823,20 +833,22 @@ static int flush_arib_std_b25(void *std_b25)
 			m = prv->emm->put(prv->emm, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_EMM_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
 			m = prv->emm->get_count(prv->emm);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_EMM_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -845,10 +857,11 @@ static int flush_arib_std_b25(void *std_b25)
 			}
 			r = proc_emm(prv);
 			if(r < 0){
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -863,20 +876,22 @@ static int flush_arib_std_b25(void *std_b25)
 			m = prv->cat->put(prv->cat, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_CAT_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
 			m = prv->cat->get_count(prv->cat);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_CAT_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -885,10 +900,11 @@ static int flush_arib_std_b25(void *std_b25)
 			}
 			r = proc_cat(prv);
 			if(r < 0){
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -903,20 +919,22 @@ static int flush_arib_std_b25(void *std_b25)
 			m = prv->pat->put(prv->pat, &hdr, p, n);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_PAT_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
 			m = prv->pat->get_count(prv->pat);
 			if(m < 0){
 				r = ARIB_STD_B25_ERROR_PAT_PARSE_FAILURE;
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -925,10 +943,11 @@ static int flush_arib_std_b25(void *std_b25)
 			}
 			r = proc_pat(prv);
 			if(r < 0){
-				if((curr+unit) <= tail)
+				if((curr+unit) <= tail){
 					l = unit;
-				else
+				}else{
 					l = 188;
+				}
 				curr += l;
 				goto LAST;
 			}
@@ -939,12 +958,14 @@ static int flush_arib_std_b25(void *std_b25)
 	}
 
 LAST:
+
 	m = curr - prv->sbuf.pool;
 	n = tail - curr;
 	if( (n < 1024) || (m > (prv->sbuf.max/2) ) ){
 		p = prv->sbuf.pool;
-		if(n > 0)
+		if(n > 0){
 			memcpy(p, curr, n);
+		}
 		prv->sbuf.head = p;
 		prv->sbuf.tail = p+n;
 	}else{
@@ -1131,7 +1152,7 @@ static int withdraw_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 	}
 
 	buf->data = prv->sbuf.head;
-	buf->size = (uint32_t)(prv->sbuf.tail - prv->sbuf.head);	// cast
+	buf->size = prv->sbuf.tail - prv->sbuf.head;
 
 	reset_work_buffer(&(prv->sbuf));
 
@@ -1322,6 +1343,7 @@ static int find_pat(ARIB_STD_B25_PRIVATE_DATA *prv)
 			}else{
 				size = 188 - 4;
 			}
+
 			if(prv->pat == NULL){
 				prv->pat = create_ts_section_parser();
 				if(prv->pat == NULL){
@@ -1687,7 +1709,7 @@ static int proc_pmt(ARIB_STD_B25_PRIVATE_DATA *prv, TS_PROGRAM *pgrm)
 	head += len;
 
 	/* save old streams */
-	memcpy(&tmp_old_strm, &(pgrm->old_strm), sizeof(TS_STREAM_LIST));
+	tmp_old_strm = pgrm->old_strm;
 
 	/* save current streams */
 	pgrm->old_strm = pgrm->streams;
@@ -2234,7 +2256,7 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 				if(prv->map[pid].type == PID_MAP_TYPE_OTHER){
 					dec = (DECRYPTOR_ELEM *)(prv->map[pid].target);
 				}else if( (prv->map[pid].type == 0) &&
-						  (prv->decrypt.count == 1) ){
+				          (prv->decrypt.count == 1) ){
 					dec = prv->decrypt.head;
 				}else{
 					dec = NULL;
@@ -2250,7 +2272,6 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 				}else{
 					prv->map[pid].undecrypted += 1;
 				}
-
 			}else{
 				curr[3] &= 0x3f;
 				prv->map[pid].normal_packet += 1;
@@ -2263,9 +2284,8 @@ static int proc_arib_std_b25(ARIB_STD_B25_PRIVATE_DATA *prv)
 			dump_pts(curr, crypt);
 		}
 #endif
-		if(!append_work_buffer(&(prv->dbuf), curr, 188)){
-			r = ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
-			goto LAST;
+		if(!append_work_buffer(&(prv->dbuf), curr, unit)){
+			return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 		}
 
 		if(prv->map[pid].type == PID_MAP_TYPE_ECM){
@@ -2396,8 +2416,9 @@ LAST:
 	n = tail - curr;
 	if( (n < 1024) || (m > (prv->sbuf.max/2) ) ){
 		p = prv->sbuf.pool;
-		if(n > 0)
+		if(n > 0){
 			memcpy(p, curr, n);
+		}
 		prv->sbuf.head = p;
 		prv->sbuf.tail = p+n;
 	}else{
