@@ -41,7 +41,9 @@ typedef struct {
 	int32_t emm;
 	int32_t verbose;
 	int32_t power_ctrl;
+#ifdef ENABLE_MULTI2_SIMD
 	int32_t simd_instruction;
+#endif
 	int32_t benchmark;
 } OPTION;
 
@@ -105,12 +107,14 @@ static void show_usage()
 	_ftprintf(stderr, _T("  -v verbose\n"));
 	_ftprintf(stderr, _T("     0: silent\n"));
 	_ftprintf(stderr, _T("     1: show processing status (default)\n"));
+#ifdef ENABLE_MULTI2_SIMD
 	_ftprintf(stderr, _T("  -i instruction\n"));
 	_ftprintf(stderr, _T("     0: use no SIMD instruction\n"));
 	_ftprintf(stderr, _T("     1: use SSE2 instruction if available\n"));
 	_ftprintf(stderr, _T("     2: use SSSE3 instruction if available\n"));
 	_ftprintf(stderr, _T("     3: use AVX2 instruction if available (default)\n"));
 	_ftprintf(stderr, _T("  -b MULTI2 benchmark test for SIMD\n"));
+#endif
 	_ftprintf(stderr, _T("\n"));
 }
 
@@ -123,7 +127,9 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 	dst->emm = 0;
 	dst->power_ctrl = 1;
 	dst->verbose = 1;
+#ifdef ENABLE_MULTI2_SIMD
 	dst->simd_instruction = 3;
+#endif
 	dst->benchmark = 0;
 
 	for(i=1;i<argc;i++){
@@ -171,6 +177,7 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 				i += 1;
 			}
 			break;
+#ifdef ENABLE_MULTI2_SIMD
 		case 'i':
 			if(argv[i][2]){
 				dst->simd_instruction = _ttoi(argv[i]+2);
@@ -182,6 +189,7 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 		case 'b':
 			dst->benchmark = 1;
 			break;
+#endif
 		default:
 			_ftprintf(stderr, _T("error - unknown option '-%c'\n"), argv[i][1]);
 			return argc;
@@ -257,11 +265,13 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 		goto LAST;
 	}
 
+#ifdef ENABLE_MULTI2_SIMD
 	code = b25->set_simd_mode(b25, opt->simd_instruction);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_simd_mode() : code=%d\n"), code);
 		goto LAST;
 	}
+#endif
 
 	bcas = create_b_cas_card();
 	if(bcas == NULL){

@@ -13,7 +13,7 @@
 #include "simd_instruction_type.h"
 
 #define USE_MULTI2_INTRINSIC	// use intrinsic functions
-#define ENABLE_MULTI2_SIMD		// enable SIMD instructions
+// #define ENABLE_MULTI2_SIMD		// enable SIMD instructions
 
 #ifdef ENABLE_MULTI2_SIMD
 
