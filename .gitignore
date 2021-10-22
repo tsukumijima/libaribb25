@@ -246,10 +246,10 @@ CMakeCache.txt
 CMakeFiles
 CMakeScripts
 cmake_install.cmake
-config.h
-version.rc
+Makefile.dep
 b25
+config.h
 libaribb25.so*
+version.rc
 *.o
-*.dep
 *.pc
