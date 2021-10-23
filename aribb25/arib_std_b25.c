@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "arib_std_b25.h"
 #include "arib_std_b25_error_code.h"
@@ -9,6 +10,9 @@
 #include "ts_common_types.h"
 #include "ts_section_parser.h"
 
+#if !defined(_WIN32)
+	#define __STDC_FORMAT_MACROS
+#endif
 #ifdef USE_BENCHMARK
 	#if defined(_WIN32)
 		#include <windows.h>
