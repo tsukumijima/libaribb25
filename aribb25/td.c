@@ -41,9 +41,7 @@ typedef struct {
 	int32_t emm;
 	int32_t verbose;
 	int32_t power_ctrl;
-#ifdef ENABLE_MULTI2_SIMD
 	int32_t simd_instruction;
-#endif
 	int32_t benchmark;
 } OPTION;
 
@@ -127,9 +125,7 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 	dst->emm = 0;
 	dst->power_ctrl = 1;
 	dst->verbose = 1;
-#ifdef ENABLE_MULTI2_SIMD
 	dst->simd_instruction = 3;
-#endif
 	dst->benchmark = 0;
 
 	for(i=1;i<argc;i++){
