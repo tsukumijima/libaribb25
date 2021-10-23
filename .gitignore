@@ -246,6 +246,7 @@ CMakeCache.txt
 CMakeFiles
 CMakeScripts
 cmake_install.cmake
+Makefile
 Makefile.dep
 b25
 config.h
