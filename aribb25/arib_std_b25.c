@@ -2867,8 +2867,11 @@ static int reserve_work_buffer(TS_WORK_BUFFER *buf, intptr_t size)
 		n += n;
 	}
 
-	//p = (uint8_t *)malloc(n);
+#ifdef ENABLE_MULTI2_SIMD
 	p = (uint8_t *)mem_aligned_alloc(n);
+#else
+	p = (uint8_t *)malloc(n);
+#endif
 	if(p == NULL){
 		return 0;
 	}
@@ -2879,8 +2882,11 @@ static int reserve_work_buffer(TS_WORK_BUFFER *buf, intptr_t size)
 		if(m > 0){
 			memcpy(p, buf->head, m);
 		}
-		//free(buf->pool);
+#ifdef ENABLE_MULTI2_SIMD
 		mem_aligned_free(buf->pool);
+#else
+		free(buf->pool);
+#endif
 		buf->pool = NULL;
 	}
 
@@ -2924,8 +2930,11 @@ static void reset_work_buffer(TS_WORK_BUFFER *buf)
 static void release_work_buffer(TS_WORK_BUFFER *buf)
 {
 	if(buf->pool != NULL){
-		//free(buf->pool);
+#ifdef ENABLE_MULTI2_SIMD
 		mem_aligned_free(buf->pool);
+#else
+		free(buf->pool);
+#endif
 	}
 	buf->pool = NULL;
 	buf->head = NULL;
