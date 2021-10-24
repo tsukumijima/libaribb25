@@ -144,13 +144,13 @@ static __forceinline const uint32_t left_rotate_uint32_for_simd(const uint32_t v
 
 static __forceinline void round_pi1(uint32_t *left, uint32_t *right)
 {
-	// Elementary Encryption Function ƒÎ1
+	// Elementary Encryption Function Æ’ÃŽ1
 	*right ^= *left;
 }
 
 static __forceinline void round_pi2(uint32_t *left, uint32_t *right, const uint32_t k1)
 {
-	// Elementary Encryption Function ƒÎ2
+	// Elementary Encryption Function Æ’ÃŽ2
 	const uint32_t y = *right + k1;
 	const uint32_t z = left_rotate_uint32_for_simd(y, 1UL) + y - 1UL;
 	*left ^= left_rotate_uint32_for_simd(z, 4UL) ^ z;
@@ -158,7 +158,7 @@ static __forceinline void round_pi2(uint32_t *left, uint32_t *right, const uint3
 
 static __forceinline void round_pi3(uint32_t *left, uint32_t *right, const uint32_t k2, const uint32_t k3)
 {
-	// Elementary Encryption Function ƒÎ3
+	// Elementary Encryption Function Æ’ÃŽ3
 	const uint32_t y = *left + k2;
 	const uint32_t z = left_rotate_uint32_for_simd(y, 2UL) + y + 1UL;
 	const uint32_t a = left_rotate_uint32_for_simd(z, 8UL) ^ z;
@@ -169,7 +169,7 @@ static __forceinline void round_pi3(uint32_t *left, uint32_t *right, const uint3
 
 static __forceinline void round_pi4(uint32_t *left, uint32_t *right, const uint32_t k4)
 {
-	// Elementary Encryption Function ƒÎ4
+	// Elementary Encryption Function Æ’ÃŽ4
 	const uint32_t y = *right + k4;
 	*left ^= (left_rotate_uint32_for_simd(y, 2UL) + y + 1UL);
 }
