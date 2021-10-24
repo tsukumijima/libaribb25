@@ -89,19 +89,27 @@ int _tmain(int argc, TCHAR **argv)
 
 static void show_usage()
 {
+#ifdef ENABLE_ARIB_STD_B1
+	_ftprintf(stderr, _T("b1 - ARIB STD-B1 test program version %s\n"), _T(VERSION_STRING));
+	_ftprintf(stderr, _T("usage: b1 [options] src.m2t dst.m2t [more pair ..]\n"));
+#else
 	_ftprintf(stderr, _T("b25 - ARIB STD-B25 test program version %s\n"), _T(VERSION_STRING));
 	_ftprintf(stderr, _T("usage: b25 [options] src.m2t dst.m2t [more pair ..]\n"));
+#endif
 	_ftprintf(stderr, _T("options:\n"));
 	_ftprintf(stderr, _T("  -r round (integer, default=4)\n"));
 	_ftprintf(stderr, _T("  -s strip\n"));
 	_ftprintf(stderr, _T("     0: keep null(padding) stream (default)\n"));
 	_ftprintf(stderr, _T("     1: strip null stream\n"));
+// EMM・通電制御情報は未サポート
+#ifndef ENABLE_ARIB_STD_B1
 	_ftprintf(stderr, _T("  -m EMM\n"));
 	_ftprintf(stderr, _T("     0: ignore EMM (default)\n"));
 	_ftprintf(stderr, _T("     1: send EMM to B-CAS card\n"));
 	_ftprintf(stderr, _T("  -p power_on_control_info\n"));
 	_ftprintf(stderr, _T("     0: do nothing additionally\n"));
 	_ftprintf(stderr, _T("     1: show B-CAS EMM receiving request (default)\n"));
+#endif
 	_ftprintf(stderr, _T("  -v verbose\n"));
 	_ftprintf(stderr, _T("     0: silent\n"));
 	_ftprintf(stderr, _T("     1: show processing status (default)\n"));
@@ -123,7 +131,11 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 	dst->round = 4;
 	dst->strip = 0;
 	dst->emm = 0;
+#ifdef ENABLE_ARIB_STD_B1
+	dst->power_ctrl = 0;
+#else
 	dst->power_ctrl = 1;
+#endif
 	dst->verbose = 1;
 	dst->simd_instruction = 3;
 	dst->benchmark = 0;
@@ -133,6 +145,8 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 			break;
 		}
 		switch(argv[i][1]){
+// EMM・通電制御情報は未サポート
+#ifndef ENABLE_ARIB_STD_B1
 		case 'm':
 			if(argv[i][2]){
 				dst->emm = _ttoi(argv[i]+2);
@@ -149,6 +163,7 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 				i += 1;
 			}
 			break;
+#endif
 		case 'r':
 			if(argv[i][2]){
 				dst->round = _ttoi(argv[i]+2);

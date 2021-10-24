@@ -47,11 +47,21 @@ typedef struct {
  constant values
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static const uint8_t INITIAL_SETTING_CONDITIONS_CMD[] = {
+#ifdef ENABLE_ARIB_STD_B1
+	// CLA・INSを修正
+	0x80, 0x5e, 0x00, 0x00, 0x00,
+#else
 	0x90, 0x30, 0x00, 0x00, 0x00,
+#endif
 };
 
 static const uint8_t CARD_ID_INFORMATION_ACQUIRE_CMD[] = {
+#ifdef ENABLE_ARIB_STD_B1
+	// CLA・INSを修正
+	0x80, 0x5e, 0x00, 0x00, 0x00,
+#else
 	0x90, 0x32, 0x00, 0x00, 0x00,
+#endif
 };
 
 static const uint8_t POWER_ON_CONTROL_INFORMATION_REQUEST_CMD[] = {
@@ -59,11 +69,21 @@ static const uint8_t POWER_ON_CONTROL_INFORMATION_REQUEST_CMD[] = {
 };
 
 static const uint8_t ECM_RECEIVE_CMD_HEADER[] = {
+#ifdef ENABLE_ARIB_STD_B1
+	// CLAを修正
+	0x80, 0x34, 0x00, 0x00,
+#else
 	0x90, 0x34, 0x00, 0x00,
+#endif
 };
 
 static const uint8_t EMM_RECEIVE_CMD_HEADER[] = {
+#ifdef ENABLE_ARIB_STD_B1
+	// CLAを修正
+	0x80, 0x36, 0x00, 0x00,
+#else
 	0x90, 0x36, 0x00, 0x00,
+#endif
 };
 
 #define B_CAS_BUFFER_MAX (4*1024)
@@ -283,6 +303,11 @@ static int get_id_b_cas_card(void *bcas, B_CAS_ID *dst)
 
 static int get_pwr_on_ctrl_b_cas_card(void *bcas, B_CAS_PWR_ON_CTRL_INFO *dst)
 {
+#ifdef ENABLE_ARIB_STD_B1
+	// 通電制御情報取得は未サポート
+	return B_CAS_CARD_ERROR_INVALID_PARAMETER;
+#endif
+
 	long ret;
 
 	unsigned long slen;
@@ -376,7 +401,11 @@ static int proc_ecm_b_cas_card(void *bcas, B_CAS_ECM_RESULT *dst, uint8_t *src, 
 
 	retry_count = 0;
 	ret = SCardTransmit(prv->card, SCARD_PCI_T1, prv->sbuf, slen, NULL, prv->rbuf, &rlen);
+#ifdef ENABLE_ARIB_STD_B1
+	while( ((ret != SCARD_S_SUCCESS) || (rlen < 22)) && (retry_count < 2) ){
+#else
 	while( ((ret != SCARD_S_SUCCESS) || (rlen < 25)) && (retry_count < 2) ){
+#endif
 		retry_count += 1;
 //		if(!connect_card(prv, prv->reader)){
 //			continue;
@@ -387,18 +416,53 @@ static int proc_ecm_b_cas_card(void *bcas, B_CAS_ECM_RESULT *dst, uint8_t *src, 
 		ret = SCardTransmit(prv->card, SCARD_PCI_T1, prv->sbuf, slen, NULL, prv->rbuf, &rlen);
 	}
 
+#ifdef ENABLE_ARIB_STD_B1
+ 	// 結果の判定方法を変更
+ 	if( (ret != SCARD_S_SUCCESS) ){
+#else
 	if( (ret != SCARD_S_SUCCESS) || (rlen < 25) ){
+#endif
 		return B_CAS_CARD_ERROR_TRANSMIT_FAILED;
 	}
 
+#ifdef ENABLE_ARIB_STD_B1
+ 	if(rlen < 22){
+ 		dst->return_code = 0xa103;
+ 	}else{
+ 		const static uint8_t ffff[16] = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
+ 		memcpy(dst->scramble_key, prv->rbuf, 16);
+ 		switch (load_be_uint16(prv->rbuf+18)){
+		case 0xc001:
+			dst->return_code = 0x0800;
+			break;
+		case 0xc000:
+			dst->return_code = 0xa901;
+			break;
+		// 他にどんなコードがあるか不明なのでとりあえずff..ffかどうかでチェック
+		default:
+			if(!memcmp(dst->scramble_key, ffff, 16)){
+				dst->return_code = 0xa902;
+			}else{
+				dst->return_code = 0x0800;
+			}
+			break;
+ 		}
+ 	}
+#else
 	memcpy(dst->scramble_key, prv->rbuf+6, 16);
 	dst->return_code = load_be_uint16(prv->rbuf+4);
+#endif
 
 	return 0;
 }
 
 static int proc_emm_b_cas_card(void *bcas, uint8_t *src, int len)
 {
+#ifdef ENABLE_ARIB_STD_B1
+ 	// EMM 処理は未サポート
+ 	return B_CAS_CARD_ERROR_INVALID_PARAMETER;
+#endif
+
 	int retry_count;
 
 	long ret;
@@ -595,22 +659,39 @@ static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, LPCTSTR reader_name)
 		return 0;
 	}
 
+#ifdef ENABLE_ARIB_STD_B1
+	if(rlen < 46){
+#else
 	if(rlen < 57){
+#endif
 		return 0;
 	}
 
 	p = prv->rbuf;
 
 	n = load_be_uint16(p+4);
+#ifdef ENABLE_ARIB_STD_B1
+ 	if(n != 0x9000){ // return code missmatch
+ 		return 0;
+	}
+#else
 	if(n != 0x2100){ // return code missmatch
 		return 0;
 	}
+#endif
 
+#ifdef ENABLE_ARIB_STD_B1
+	memcpy(prv->stat.system_key, p+8, 32);
+	memcpy(prv->stat.init_cbc, p+8, 8);
+	prv->stat.ca_system_id = load_be_uint16(p);
+	prv->stat.card_status = 0;
+#else
 	memcpy(prv->stat.system_key, p+16, 32);
 	memcpy(prv->stat.init_cbc, p+48, 8);
 	prv->stat.bcas_card_id = load_be_uint48(p+8);
 	prv->stat.card_status = load_be_uint16(p+2);
 	prv->stat.ca_system_id = load_be_uint16(p+6);
+#endif
 
 	return 1;
 }

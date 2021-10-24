@@ -551,10 +551,12 @@ static int set_b_cas_card_arib_std_b25(void *std_b25, B_CAS_CARD *bcas)
 			return ARIB_STD_B25_ERROR_INVALID_B_CAS_STATUS;
 		}
 		prv->ca_system_id = is.ca_system_id;
+#ifndef ENABLE_ARIB_STD_B1
 		n = prv->bcas->get_id(prv->bcas, &(prv->casid));
 		if(n < 0){
 			return ARIB_STD_B25_ERROR_INVALID_B_CAS_STATUS;
 		}
+#endif
 	}
 
 	return 0;
