@@ -204,7 +204,7 @@ GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
 
-# Xcode 
+# Xcode
 ## Build generated
 build/
 DerivedData/
@@ -248,9 +248,12 @@ CMakeScripts
 cmake_install.cmake
 Makefile
 Makefile.dep
-b25
 config.h
+b1
+b25
+libaribb1.so*
 libaribb25.so*
-version.rc
+version_b1.rc
+version_b25.rc
 *.o
 *.pc
