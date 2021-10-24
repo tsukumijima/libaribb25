@@ -135,7 +135,7 @@ if(UNIX AND NOT CYGWIN)
 	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -DLDCONFIG_EXECUTABLE=${LDCONFIG_EXECUTABLE} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PostInstall.cmake)")
-	
+
 	add_custom_target(uninstall ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Uninstall.cmake)
 elseif(WIN32)
 	install(TARGETS b25 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

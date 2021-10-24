@@ -16,7 +16,7 @@ matrix:
             - cmake
             - cmake-data
             - libpcsclite-dev
-  
+
     # Linux with LLVM C Compiler
     - os: linux
       compiler: clang
@@ -59,7 +59,7 @@ matrix:
       compiler: clang
 
     # macOS 10.11 (Sierra)
-    - os: osx 
+    - os: osx
       osx_image: xcode8
       compiler: clang
 

@@ -201,7 +201,7 @@ const BOOL CB25Decoder::Decode(BYTE *pSrcBuf, const DWORD dwSrcSize, BYTE **ppDs
 const BOOL CB25Decoder::Flush(BYTE **ppDstBuf, DWORD *pdwDstSize)
 {
 	BOOL ret = TRUE;
-	
+
 	if (_b25) {
 		int rc = _b25->flush(_b25);
 		ret = (rc < 0) ? FALSE : TRUE;
@@ -216,7 +216,7 @@ const BOOL CB25Decoder::Flush(BYTE **ppDstBuf, DWORD *pdwDstSize)
 const BOOL CB25Decoder::Reset(void)
 {
 	BOOL ret = TRUE;
-	
+
 	if (_b25) {
 		int rc = _b25->reset(_b25);
 		ret = (rc < 0) ? FALSE : TRUE;

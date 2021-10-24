@@ -2135,7 +2135,7 @@ static int proc_ecm(DECRYPTOR_ELEM *dec, B_CAS_CARD *bcas, int32_t multi2_round)
 	fprintf(stderr, "\n");
 	fflush(stderr);
 #endif
-	
+
 LAST:
 	if(sect.raw != NULL){
 		n = dec->ecm->ret(dec->ecm, &sect);
@@ -2150,7 +2150,7 @@ static void dump_pts(uint8_t *src, int32_t crypt)
 {
 	int32_t pts_dts_flag;
 	int64_t pts,dts;
-	
+
 	src += 4; // TS ヘッダ部
 	src += 4; // start_code_prefix + stream_id 部
 	src += 2; // packet_length 部

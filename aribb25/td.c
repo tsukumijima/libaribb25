@@ -585,7 +585,7 @@ static void run_multi2_benchmark_test(OPTION *opt)
 		}else{
 			time_percentage = -(int32_t)(totals[i]*100/base_time) - 100;
 		}
-		
+
 		_ftprintf(stdout, _T(" (%3d%% faster)\n"), time_percentage);
 	}
 
