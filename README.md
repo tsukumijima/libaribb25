@@ -1,7 +1,115 @@
 
 # libaribb25
 
-以下のドキュメントは、元の readme.txt を内容をそのままに Markdown 形式に書き直したものです。
+## このフォークについて
+
+散逸している libaribb25 派生のソースコードやパッチを一つのコードベースにまとめる事を目的とした、Windows・Linux 共用の ARIB STD-B1 / ARIB STD-B25 ライブラリです。  
+細心の注意を払ってコードを統合したほか、動作確認を行っています。ただし、私が C/C++ が書けず、コードの実装内容を理解できているわけでもないため、100% 正確に動作する保証はありません。自己の責任のもとでお願いします。  
+何か不備がありましたら Issue や Pull Request までお願いします。可能な範囲で対応します。
+
+## 変更点
+
+### コードの統合
+
+libaribb25 には主に Windows 環境で利用されている [epgdatacapbon 版](https://github.com/epgdatacapbon/libaribb25) と、Linux 環境で利用されている [stz2012 版](https://github.com/stz2012/libarib25) の2つのフォークがあります。  
+このフォークでは、epgdatacapbon 版にさらに SIMD 対応を実装している [HaijinW 版](https://github.com/HaijinW/libaribb25) をベースに、比較的更新が活発な [stz2012 版](https://github.com/stz2012/libarib25) の変更内容を取り込みました。  
+加えて epgdatacapbon 氏が別途公開している [stz2012 版ベースのフォーク](https://github.com/epgdatacapbon/libarib25) での変更内容も取り込み、現時点で存在する有用な変更内容を大方取り込んだつもりです。
+
+2つのフォークの統合にあたり、stz2012 版由来の libarib25 という表現を libaribb25 に統一したほか、epgdatacapbon 版由来の Linux 向け Makefile を削除し、Linux でのビルド方法を CMake に統一しています。  
+Windows 向けライブラリのビルドは Visual Studio で、Linux 向けライブラリのビルドは CMake で行えます。
+
+### スカパー！プレミアムサービス対応の統合
+
+さらに、パッチとしていくつか実装がある ARIB STD-B1 対応のためのコードを統合しました。
+
+ARIB STD-B1 は、スカパー！プレミアムサービスの CAS システム（スカパーカード）の仕様が定められている標準規格です。  
+とはいえ、実際に ARIB STD-B1 で規定されている内容は僅かで、多くはスカパーによる非公開仕様となっています。  
+
+- libaribb25.patch (https://www.axfc.net/u/3985543)
+- arib-b1-stream-test (https://www.npmjs.com/package/arib-b1-stream-test)
+- B1_p2c9 (スカパーTS抜きツール詰め合わせ (https://www44.zippyshare.com/v/yWcPHjsD/file.html) に同梱)
+- B25Decoder.dll to B1 diff (https://pastebin.pl/view/478245cc)
+
+のコードを参考に、現行のコードに手作業で統合しました。  
+多くが非公開仕様となっている関係で、現状 EMM 処理と通電制御情報の取得は未サポートとなっています。  
+そのため、ARIB STD-B25 における b25.exe に相当する b1.exe のコマンドラインオプションからも、EMM の送信を行う `-m` オプションと、通信制御情報を表示する `-p` オプションを削除しています。
+
+便宜上 libaribb1 という別ライブラリとしていますが、コードベースは同一です。  
+ENABLE_ARIB_STD_B1 プリプロセッサが定義された状態でビルドすると、libaribb25 ではなく libaribb1 が生成されます。  
+スカパー！プレミアムサービス対応の統合にともない、Windows (Visual Studio)・Linux (CMake) の両方で libaribb25 (b25.exe / libaribb25.dll) と同時に libaribb1 (b1.exe / libaribb1.dll) が生成できるよう、Visual Studio のプロジェクトファイルと CMakeList.txt を変更しています。
+
+### B25Decoder 互換インターフェイスの対応
+
+epgdatacapbon 版由来の、libaribb25 における B25Decoder 互換インターフェイスの実装を引き継いでいます。  
+libaribb1.dll / libaribb25.dll をそれぞれ B1Decoder.dll / B25Decoder.dll とリネームして EDCB などの各ソフトに配置することで、オリジナルの B1Decoder.dll / B25Decoder.dll を代替することができます。
+
+B25Decoder 互換のインターフェイスがビルドされるのは Windows (Visual Studio) でビルドした場合のみです。  
+Linux (CMake) でビルドした場合はビルド対象になりません。そもそも Windows API に依存しているため、Linux ではビルドに失敗すると思われます。
+
+B25Decoder 互換のインターフェイスが実装されているのは libaribb25.cpp / libaribb25.h です。  
+B25Decoder.cpp / B25Decoder.h が一見それのように見えますが、実はプロジェクト上では使用されておらずビルド対象にも入っていないコードです。  
+> そもそも関数名が UpperCamelCase から snake_case に変更されていることからして、本来の B25Decoder インターフェイスとの互換性はありません。  
+おそらく Linux で B25Decoder のようなインターフェイスを実装した libaribb25 のラッパーとしてのコードだと思われますが、このコードが含まれていた epgdatacapbon 版でも現在は使われておらず、どのような意図で利用されていたコードなのかは不明です。本来削除しても問題はないのですが、念のため残しています。
+
+### SIMD 実装の差異
+
+基本的に Windows と Linux でコードベースは共通になっていますが、MULTI2 の復号周りのコードに関しては両者ともに大きく変更されていたため、マージは行いませんでした。  
+multi2.c が HaijinW 版由来のオリジナルに近い MULTI2 復号コードで、multi2.cc が stz2012 版由来の C++ で書き直された MULTI2 復号コードです。  
+Windows (Visual Studio) でビルドする場合は HaijinW 版由来の SIMD 実装 (ENABLE_MULTI2_SIMD) が、Linux (CMake) でビルドする場合は stz2012 版由来の SIMD 実装が利用されるように調整しています。  
+
+Windows 向け（＝ HaijinW 版の SIMD 実装）の b1.exe / b25.exe では、SSE2,SSE3,AVX2 のどの SIMD 拡張命令を利用するかを選択する `-i` オプションと、MULTI2 の復号のベンチマークテストを行う `-b` オプションが実装されています。  
+Linux 向け（＝ stz2012 版の SIMD 実装）の b1 / b25 では、オプションの追加はありませんが、SIMD が使用可能であれば自動的に利用するコードになっていると思われます。  
+なお、AVX2 を有効化するには、後述の CMake でのビルドの際に `cmake` に `-DUSE_AVX2=ON` オプションを付与する必要があるようです。
+
+## バイナリの構成
+
+- b1.exe / b1
+	- ARIB STD-B1 記載の処理を行うためのプログラム
+	- MULTI2 で暗号化された TS を、スカパーカードと通信し復号して出力する
+- libaribb1.dll / libaribb1.so
+	- MULTI2 復号処理を行うライブラリ
+  - libaribb1.dll は B1Decoder.dll と互換性がある
+- b25.exe / b25
+	- ARIB STD-B25 記載の処理を行うためのプログラム
+	- MULTI2 で暗号化された TS を、B-CAS カードと通信し復号して出力する
+- libaribb25.dll / libaribb25.so
+	- MULTI2 復号処理を行うライブラリ
+  - libaribb25.dll は B25Decoder.dll と互換性がある
+
+## ビルド方法
+
+### Windows (Visual Studio)
+
+Visual Studio 2019 で arib_std_b25.sln を開きます。
+
+上部メニューの [Debug] を [Release] に変更し、お使いのアーキテクチャに合わせて [Win32] または [x64] のいずれかを選択します。  
+[ビルド] → [ソリューションのビルド] をクリックし、ビルドを実行します。
+
+ビルドが完了すると、`Win32/Release` または `x64/Release` 以下にバイナリが生成されています。
+
+### Ubuntu (CMake)
+
+```
+sudo apt install cmake libpcsclite1 libpcsclite-dev pkg-config
+```
+
+あらかじめ、`cmake`・`libpcsclite1`・`libpcsclite-dev`・`pkg-config` のインストールが必要です。
+
+```
+cmake -B build
+cd build
+make
+sudo make install
+```
+
+`cmake -B build` で `build/` ディレクトリに Makefile を生成してから、`make` でビルドを実行します。  
+`sudo make install` でビルドした libaribb1 / libaribb25 をインストールします。  
+`build/` ディレクトリで `sudo make uninstall` を実行することで、インストールしたファイルをアンインストールすることができます。
+
+<br>
+
+以下のドキュメントは、元の readme.txt を内容をそのままに Markdown 形式に書き直したものです。  
+HaijinW 版での変更内容が記載されている [MEMO.txt](https://github.com/tsukumijima/libaribb25/blob/master/MEMO.txt) もあわせて参照してください。
 
 ----
 
