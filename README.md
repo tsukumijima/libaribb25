@@ -4,7 +4,10 @@
 ## このフォークについて
 
 散逸している libaribb25 派生のソースコードやパッチを一つのコードベースにまとめる事を目的とした、Windows・Linux 共用の ARIB STD-B1 / ARIB STD-B25 ライブラリです。  
-細心の注意を払ってコードを統合したほか、動作確認を行っています。ただし、私が C/C++ が書けず、コードの実装内容を理解できているわけでもないため、100% 正確に動作する保証はありません。自己の責任のもとでお願いします。  
+[epgdatacapbon 版](https://github.com/epgdatacapbon/libaribb25) 版と [stz2012 版](https://github.com/stz2012/libarib25) を統合し、同じコードベースから Windows 向けと Linux 向け両方の libaribb25 をビルドできるようになったほか、スカパー！プレミアムサービス (libaribb1) への対応、arib-b25-stream-test への対応、Windows 向け SIMD 実装の統合も行っています。
+
+細心の注意を払ってコードを統合したほか、動作確認を行っています。  
+ただし、私が C/C++ が書けず、コードの実装内容を正確に理解できているわけでもないため、100% 動作する保証はありません。自己の責任のもとでお願いします。  
 何か不備がありましたら Issue や Pull Request までお願いします。可能な範囲で対応します。
 
 ## 変更点
@@ -38,6 +41,21 @@ ARIB STD-B1 は、スカパー！プレミアムサービスの CAS システム
 ENABLE_ARIB_STD_B1 プリプロセッサが定義された状態でビルドすると、libaribb25 ではなく libaribb1 が生成されます。  
 スカパー！プレミアムサービス対応の統合にともない、Windows (Visual Studio)・Linux (CMake) の両方で libaribb25 (b25.exe / libaribb25.dll) と同時に libaribb1 (b1.exe / libaribb1.dll) が生成できるよう、Visual Studio のプロジェクトファイルと CMakeList.txt を変更しています。
 
+### arib-b1-stream-test・arib-b25-stream-test の統合
+
+[arib-b25-stream-test](https://www.npmjs.com/package/arib-b25-stream-test) は、標準入力から MULTI2 で暗号化された TS を受け、B-CAS カードと通信し復号した TS を標準出力に出力するプログラムです。  
+b25（実行ファイル）に渡す `src.m2t` `dst.m2t` の各引数をそれぞれ標準入出力に置き換えたものと言えば分かりやすいでしょうか。  
+[arib-b1-stream-test](https://www.npmjs.com/package/arib-b1-stream-test) は、その名の通り arib-b25-stream-test の ARIB STD-B1 対応版となっています。
+
+Mirakurun で受信した放送波のスクランブルを解除するための decoder として多く利用されていますが、実は 5 年以上前のかなり古い stz2012 版の libarib25 がベースとなっています。  
+そのため、最新の stz2012 版などでは修正されている不具合が未修正のままになっているなど、いくつかの問題を抱えています。
+
+> もっともほとんどのケースで問題なく動作するため、影響はさほど大きくないと思われます。
+
+[arib-b25-stream-test_for_win](https://github.com/daig0rian/arib-b25-stream-test_for_win) のコードを参考に、Linux 対応を追加して現行のコードに手作業で統合しました。  
+ENABLE_ARIB_STREAM_TEST プリプロセッサが定義された状態でビルドすると、b1・b25 ではなく arib-b1-stream-test・arib-b25-stream-test が生成されます。  
+arib-b1-stream-test・arib-b25-stream-test の統合にともない、Windows (Visual Studio)・Linux (CMake) の両方で libaribb1・libaribb25 と同時に arib-b1-stream-test・arib-b25-stream-test が生成できるよう、Visual Studio のプロジェクトファイルと CMakeList.txt を変更しています。
+
 ### B25Decoder 互換インターフェイスの対応
 
 epgdatacapbon 版由来の、libaribb25 における B25Decoder 互換インターフェイスの実装を引き継いでいます。  
@@ -47,7 +65,7 @@ B25Decoder 互換のインターフェイスがビルドされるのは Windows 
 Linux (CMake) でビルドした場合はビルド対象になりません。そもそも Windows API に依存しているため、Linux ではビルドに失敗すると思われます。
 
 B25Decoder 互換のインターフェイスが実装されているのは libaribb25.cpp / libaribb25.h です。  
-B25Decoder.cpp / B25Decoder.h が一見それのように見えますが、実はプロジェクト上では使用されておらずビルド対象にも入っていないコードです。  
+B25Decoder.cpp / B25Decoder.h が一見それのように見えますが、実はプロジェクト上では使用されておらず、ビルド対象にも入っていないコードです。  
 > そもそも関数名が UpperCamelCase から snake_case に変更されていることからして、本来の B25Decoder インターフェイスとの互換性はありません。  
 おそらく Linux で B25Decoder のようなインターフェイスを実装した libaribb25 のラッパーとしてのコードだと思われますが、このコードが含まれていた epgdatacapbon 版でも現在は使われておらず、どのような意図で利用されていたコードなのかは不明です。本来削除しても問題はないのですが、念のため残しています。
 
@@ -63,16 +81,20 @@ Linux 向け（＝ stz2012 版の SIMD 実装）の b1 / b25 では、オプシ�
 
 ## バイナリの構成
 
-- b1.exe / b1
+- **b1.exe / b1**
 	- ARIB STD-B1 記載の処理を行うためのプログラム
 	- MULTI2 で暗号化された TS を、スカパーカードと通信し復号して出力する
-- libaribb1.dll / libaribb1.so
+- **arib-b1-stream-test.exe / arib-b1-stream-test**
+  - 上記のプログラムに変更を加え、標準入力から MULTI2 で暗号化された TS を受け、復号した TS を標準出力に出力するプログラム
+- **libaribb1.dll / libaribb1.so**
 	- MULTI2 復号処理を行うライブラリ
   - libaribb1.dll は B1Decoder.dll と互換性がある
-- b25.exe / b25
+- **b25.exe / b25**
 	- ARIB STD-B25 記載の処理を行うためのプログラム
 	- MULTI2 で暗号化された TS を、B-CAS カードと通信し復号して出力する
-- libaribb25.dll / libaribb25.so
+- **arib-b25-stream-test.exe / arib-b25-stream-test**
+  - 上記のプログラムに変更を加え、標準入力から MULTI2 で暗号化された TS を受け、復号した TS を標準出力に出力するプログラム
+- **libaribb25.dll / libaribb25.so**
 	- MULTI2 復号処理を行うライブラリ
   - libaribb25.dll は B25Decoder.dll と互換性がある
 
@@ -106,9 +128,7 @@ sudo make install
 `sudo make install` でビルドした libaribb1 / libaribb25 をインストールします。  
 `build/` ディレクトリで `sudo make uninstall` を実行することで、インストールしたファイルをアンインストールすることができます。
 
-<br>
-
-以下のドキュメントは、元の readme.txt を内容をそのままに Markdown 形式に書き直したものです。  
+<br>以下のドキュメントは、元の readme.txt を内容をそのままに Markdown 形式に書き直したものです。  
 HaijinW 版での変更内容が記載されている [MEMO.txt](https://github.com/tsukumijima/libaribb25/blob/master/MEMO.txt) もあわせて参照してください。
 
 ----
