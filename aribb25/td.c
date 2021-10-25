@@ -227,7 +227,11 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 #endif
 		default:
 			_ftprintf(stderr, _T("error - unknown option '-%c'\n"), argv[i][1]);
+#ifdef ENABLE_ARIB_STREAM_TEST
+			return -1;  // show usage
+#else
 			return argc;
+#endif
 		}
 	}
 
@@ -240,7 +244,11 @@ static void test_arib_std_b25(OPTION *opt)
 static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 #endif
 {
+#ifdef ENABLE_ARIB_STREAM_TEST
+	int code,i,n;
+#else
 	int code,i,n,m;
+#endif
 	int sfd,dfd;
 
 #ifndef ENABLE_ARIB_STREAM_TEST
