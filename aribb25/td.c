@@ -47,7 +47,11 @@ typedef struct {
 
 static void show_usage();
 static int parse_arg(OPTION *dst, int argc, TCHAR **argv);
+#ifdef ENABLE_ARIB_STREAM_TEST
+static void test_arib_std_b25(OPTION *opt);
+#else
 static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt);
+#endif
 static void show_bcas_power_on_control_info(B_CAS_CARD *bcas);
 static void run_multi2_benchmark_test(OPTION *opt);
 
@@ -56,7 +60,7 @@ int _tmain(int argc, TCHAR **argv)
 	int n;
 	OPTION opt;
 
-	#if defined(_WIN32)
+#if defined(_WIN32)
 	_CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_FILE );
 	_CrtSetReportFile( _CRT_WARN, _CRTDBG_FILE_STDOUT );
 	_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_FILE );
@@ -64,10 +68,14 @@ int _tmain(int argc, TCHAR **argv)
 	_CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_FILE );
 	_CrtSetReportFile( _CRT_ASSERT, _CRTDBG_FILE_STDOUT );
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF|_CRTDBG_DELAY_FREE_MEM_DF|_CRTDBG_CHECK_ALWAYS_DF|_CRTDBG_LEAK_CHECK_DF);
-	#endif
+#endif
 
 	n = parse_arg(&opt, argc, argv);
+#ifdef ENABLE_ARIB_STREAM_TEST
+	if(n != argc && opt.benchmark == 0){
+#else
 	if(n+2 > argc && opt.benchmark == 0){
+#endif
 		show_usage();
 		exit(EXIT_FAILURE);
 	}
@@ -76,25 +84,41 @@ int _tmain(int argc, TCHAR **argv)
 		exit(EXIT_FAILURE);
 	}
 
+#ifdef ENABLE_ARIB_STREAM_TEST
+	test_arib_std_b25(&opt);
+#else
 	for(;n<=(argc-2);n+=2){
 		test_arib_std_b25(argv[n+0], argv[n+1], &opt);
 	}
+#endif
 
-	#if defined(_WIN32)
+#if defined(_WIN32)
 	_CrtDumpMemoryLeaks();
-	#endif
+#endif
 
 	return EXIT_SUCCESS;
 }
 
 static void show_usage()
 {
+#ifdef ENABLE_ARIB_STREAM_TEST
+// arib-b1-stream-test・arib-b25-stream-test
+#ifdef ENABLE_ARIB_STD_B1
+	_ftprintf(stderr, _T("arib-b1-stream-test - ARIB STD-B1 test program version %s\n"), _T(VERSION_STRING));
+	_ftprintf(stderr, _T("usage: arib-b1-stream-test [options] \n"));
+#else
+	_ftprintf(stderr, _T("arib-b25-stream-test - ARIB STD-B25 test program version %s\n"), _T(VERSION_STRING));
+	_ftprintf(stderr, _T("usage: arib-b25-stream-test [options] \n"));
+#endif
+#else
+// b1・b25
 #ifdef ENABLE_ARIB_STD_B1
 	_ftprintf(stderr, _T("b1 - ARIB STD-B1 test program version %s\n"), _T(VERSION_STRING));
 	_ftprintf(stderr, _T("usage: b1 [options] src.m2t dst.m2t [more pair ..]\n"));
 #else
 	_ftprintf(stderr, _T("b25 - ARIB STD-B25 test program version %s\n"), _T(VERSION_STRING));
 	_ftprintf(stderr, _T("usage: b25 [options] src.m2t dst.m2t [more pair ..]\n"));
+#endif
 #endif
 	_ftprintf(stderr, _T("options:\n"));
 	_ftprintf(stderr, _T("  -r round (integer, default=4)\n"));
@@ -210,12 +234,18 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 	return i;
 }
 
+#ifdef ENABLE_ARIB_STREAM_TEST
+static void test_arib_std_b25(OPTION *opt)
+#else
 static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
+#endif
 {
 	int code,i,n,m;
 	int sfd,dfd;
 
+#ifndef ENABLE_ARIB_STREAM_TEST
 	int64_t total;
+#endif
 	int32_t offset;
 #if defined(_WIN32)
 	unsigned long tick,tock;
@@ -236,12 +266,23 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	ARIB_STD_B25_BUFFER sbuf;
 	ARIB_STD_B25_BUFFER dbuf;
 
+#ifdef ENABLE_ARIB_STREAM_TEST
+	sfd = 0; // stdin
+	dfd = 1; // stdout
+#else
 	sfd = -1;
 	dfd = -1;
+#endif
 	b25 = NULL;
 	bcas = NULL;
 	_data = NULL;
 
+#ifdef ENABLE_ARIB_STREAM_TEST
+#if defined(_WIN32)
+	_setmode(_fileno(stdin), _O_BINARY);
+	_setmode(_fileno(stdout), _O_BINARY);
+#endif
+#else
 	sfd = _topen(src, _O_BINARY|_O_RDONLY|_O_SEQUENTIAL);
 	if(sfd < 0){
 		_ftprintf(stderr, _T("error - failed on _open(%s) [src]\n"), src);
@@ -251,6 +292,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	_lseeki64(sfd, 0, SEEK_END);
 	total = _telli64(sfd);
 	_lseeki64(sfd, 0, SEEK_SET);
+#endif
 
 	b25 = create_arib_std_b25();
 	if(b25 == NULL){
@@ -302,11 +344,13 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 		goto LAST;
 	}
 
+#ifndef ENABLE_ARIB_STREAM_TEST
 	dfd = _topen(dst, _O_BINARY|_O_WRONLY|_O_SEQUENTIAL|_O_CREAT|_O_TRUNC, _S_IREAD|_S_IWRITE);
 	if(dfd < 0){
 		_ftprintf(stderr, _T("error - failed on _open(%s) [dst]\n"), dst);
 		goto LAST;
 	}
+#endif
 
 	offset = 0;
 #if defined(_WIN32)
@@ -359,7 +403,9 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 
 		offset += sbuf.size;
 		if(opt->verbose != 0){
+#ifndef ENABLE_ARIB_STREAM_TEST
 			m = (int)(10000ULL*offset/total);
+#endif
 			mbps = 0.0;
 #if defined(_WIN32)
 			tick = GetTickCount();
@@ -378,7 +424,11 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 				mbps /= millisec;
 			}
 #endif
+#ifdef ENABLE_ARIB_STREAM_TEST
+			_ftprintf(stderr, _T("\rprocessing: %6.2f MB/sec"), mbps);
+#else
 			_ftprintf(stderr, _T("\rprocessing: %2d.%02d%% [%6.2f MB/sec]"), m/100, m%100, mbps);
+#endif
 		}
 	}
 
@@ -458,6 +508,7 @@ LAST:
 		_data = NULL;
 	}
 
+#ifndef ENABLE_ARIB_STREAM_TEST
 	if(sfd >= 0){
 		_close(sfd);
 		sfd = -1;
@@ -467,6 +518,7 @@ LAST:
 		_close(dfd);
 		dfd = -1;
 	}
+#endif
 
 	if(b25 != NULL){
 		b25->release(b25);
@@ -492,30 +544,30 @@ static void show_bcas_power_on_control_info(B_CAS_CARD *bcas)
 	}
 
 	if(pwc.count == 0){
-		_ftprintf(stdout, _T("no EMM receiving request\n"));
+		_ftprintf(stderr, _T("no EMM receiving request\n"));
 		return;
 	}
 
-	_ftprintf(stdout, _T("total %d EMM receiving request\n"), pwc.count);
+	_ftprintf(stderr, _T("total %d EMM receiving request\n"), pwc.count);
 	for(i=0;i<pwc.count;i++){
-		_ftprintf(stdout, _T("+ [%d] : tune "), i);
+		_ftprintf(stderr, _T("+ [%d] : tune "), i);
 		switch(pwc.data[i].network_id){
 		case 4:
 			w = pwc.data[i].transport_id;
-			_ftprintf(stdout, _T("BS-%d/TS-%d "), ((w >> 4) & 0x1f), (w & 7));
+			_ftprintf(stderr, _T("BS-%d/TS-%d "), ((w >> 4) & 0x1f), (w & 7));
 			break;
 		case 6:
 		case 7:
 			w = pwc.data[i].transport_id;
-			_ftprintf(stdout, _T("ND-%d/TS-%d "), ((w >> 4) & 0x1f), (w & 7));
+			_ftprintf(stderr, _T("ND-%d/TS-%d "), ((w >> 4) & 0x1f), (w & 7));
 			break;
 		default:
-			_ftprintf(stdout, _T("unknown(b:0x%02x,n:0x%04x,t:0x%04x) "), pwc.data[i].broadcaster_group_id, pwc.data[i].network_id, pwc.data[i].transport_id);
+			_ftprintf(stderr, _T("unknown(b:0x%02x,n:0x%04x,t:0x%04x) "), pwc.data[i].broadcaster_group_id, pwc.data[i].network_id, pwc.data[i].transport_id);
 			break;
 		}
-		_ftprintf(stdout, _T("between %04d %02d/%02d "), pwc.data[i].s_yy, pwc.data[i].s_mm, pwc.data[i].s_dd);
-		_ftprintf(stdout, _T("to %04d %02d/%02d "), pwc.data[i].l_yy, pwc.data[i].l_mm, pwc.data[i].l_dd);
-		_ftprintf(stdout, _T("least %d hours\n"), pwc.data[i].hold_time);
+		_ftprintf(stderr, _T("between %04d %02d/%02d "), pwc.data[i].s_yy, pwc.data[i].s_mm, pwc.data[i].s_dd);
+		_ftprintf(stderr, _T("to %04d %02d/%02d "), pwc.data[i].l_yy, pwc.data[i].l_mm, pwc.data[i].l_dd);
+		_ftprintf(stderr, _T("least %d hours\n"), pwc.data[i].hold_time);
 	}
 }
 
@@ -555,7 +607,7 @@ static void run_multi2_benchmark_test(OPTION *opt)
 		goto LAST;
 	}
 
-	_ftprintf(stdout, _T("running - MULTI2 benchmark test\n"));
+	_ftprintf(stderr, _T("running - MULTI2 benchmark test\n"));
 
 	memset(totals, 0, sizeof(totals));
 	max_time = INT64_MIN;
@@ -572,12 +624,12 @@ static void run_multi2_benchmark_test(OPTION *opt)
 		test_count += BENCHMARK_ROUND;
 	}while(max_time < 1500);
 
-	_ftprintf(stdout, _T("complete - MULTI2 benchmark test (count=%u)\n"), test_count);
+	_ftprintf(stderr, _T("complete - MULTI2 benchmark test (count=%u)\n"), test_count);
 	base_time = totals[0];
 	for(int32_t i=0;i<MAX_INSTRUCTION;i++){
-		_ftprintf(stdout, _T("  %-6s: %5" PRId64 " ms [%8d packets/s]"), INSTRUCTION_NAMES[i], totals[i], (int32_t)round(test_count*1000LL/(double)totals[i]));
+		_ftprintf(stderr, _T("  %-6s: %5" PRId64 " ms [%8d packets/s]"), INSTRUCTION_NAMES[i], totals[i], (int32_t)round(test_count*1000LL/(double)totals[i]));
 		if(i == 0){
-			_ftprintf(stdout, _T("\n"));
+			_ftprintf(stderr, _T("\n"));
 			continue;
 		}
 		if(totals[i] < base_time){
@@ -586,7 +638,7 @@ static void run_multi2_benchmark_test(OPTION *opt)
 			time_percentage = -(int32_t)(totals[i]*100/base_time) - 100;
 		}
 
-		_ftprintf(stdout, _T(" (%3d%% faster)\n"), time_percentage);
+		_ftprintf(stderr, _T(" (%3d%% faster)\n"), time_percentage);
 	}
 
 LAST:
@@ -599,6 +651,6 @@ LAST:
 #else
 static void run_multi2_benchmark_test(OPTION *opt)
 {
-	_ftprintf(stdout, _T("MULTI2 benchmark test is disabled\n"));
+	_ftprintf(stderr, _T("MULTI2 benchmark test is disabled\n"));
 }
 #endif
