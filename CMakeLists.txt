@@ -32,6 +32,7 @@ endif()
 
 set(ARIBB1_LIB_NAME "aribb1")
 set(ARIBB1_CMD_NAME "b1")
+set(ARIBB1_STREAM_TEST_NAME "arib-b1-stream-test")
 
 set(ARIBB1_URL "https://github.com/tsukumijima/libaribb25")
 set(ARIBB1_DESCRIPTION "Reference implementation of ARIB STD-B1")
@@ -49,6 +50,7 @@ set(ARIBB1_VERSION_STRING stz-${ARIBB1_VERSION_NUMBER})
 
 set(ARIBB25_LIB_NAME "aribb25")
 set(ARIBB25_CMD_NAME "b25")
+set(ARIBB25_STREAM_TEST_NAME "arib-b25-stream-test")
 
 set(ARIBB25_URL "https://github.com/tsukumijima/libaribb25")
 set(ARIBB25_DESCRIPTION "Reference implementation of ARIB STD-B25")
@@ -156,6 +158,18 @@ target_compile_definitions(b1 PRIVATE ENABLE_ARIB_STD_B1)
 configure_file(aribb25/config.h.in config.h @ONLY)
 configure_file(aribb25/version_b1.rc.in version_b1.rc @ONLY)
 
+# ---------- arib-b1-stream-test ----------
+
+add_executable(arib-b1-stream-test aribb25/td.c ${CMAKE_CURRENT_BINARY_DIR}/version_b1.rc)
+set_target_properties(arib-b1-stream-test PROPERTIES OUTPUT_NAME ${ARIBB1_STREAM_TEST_NAME})
+target_link_libraries(arib-b1-stream-test PRIVATE ${PCSC_LIBRARIES})
+target_link_libraries(arib-b1-stream-test PRIVATE aribb1-shared)
+target_compile_definitions(arib-b1-stream-test PRIVATE ENABLE_ARIB_STD_B1)
+target_compile_definitions(arib-b1-stream-test PRIVATE ENABLE_ARIB_STREAM_TEST)
+
+configure_file(aribb25/config.h.in config.h @ONLY)
+configure_file(aribb25/version_b1.rc.in version_b1.rc @ONLY)
+
 # ---------- libaribb25 ----------
 
 add_library(aribb25-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.cc aribb25/ts_section_parser.c aribb25/version_b25.c)
@@ -184,6 +198,17 @@ target_link_libraries(b25 PRIVATE aribb25-shared)
 configure_file(aribb25/config.h.in config.h @ONLY)
 configure_file(aribb25/version_b25.rc.in version_b25.rc @ONLY)
 
+# ---------- arib-b25-stream-test ----------
+
+add_executable(arib-b25-stream-test aribb25/td.c ${CMAKE_CURRENT_BINARY_DIR}/version_b25.rc)
+set_target_properties(arib-b25-stream-test PROPERTIES OUTPUT_NAME ${ARIBB25_STREAM_TEST_NAME})
+target_link_libraries(arib-b25-stream-test PRIVATE ${PCSC_LIBRARIES})
+target_link_libraries(arib-b25-stream-test PRIVATE aribb25-shared)
+target_compile_definitions(arib-b25-stream-test PRIVATE ENABLE_ARIB_STREAM_TEST)
+
+configure_file(aribb25/config.h.in config.h @ONLY)
+configure_file(aribb25/version_b25.rc.in version_b25.rc @ONLY)
+
 # ---------- install (Unix) ----------
 
 if(UNIX AND NOT CYGWIN)
@@ -193,6 +218,7 @@ if(UNIX AND NOT CYGWIN)
 	configure_file(aribb25/libaribb1.pc.in ${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB1_LIB_NAME}.pc @ONLY)
 
 	install(TARGETS b1 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+	install(TARGETS arib-b1-stream-test RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb1-static aribb1-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB1_LIB_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
@@ -203,6 +229,7 @@ if(UNIX AND NOT CYGWIN)
 	configure_file(aribb25/libaribb25.pc.in ${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}.pc @ONLY)
 
 	install(TARGETS b25 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+	install(TARGETS arib-b25-stream-test RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb25-static aribb25-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
