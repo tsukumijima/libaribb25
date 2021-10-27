@@ -6,7 +6,7 @@
 散逸している libaribb25 派生のソースコードやパッチを一つのコードベースにまとめる事を目的とした、Windows・Linux 共用の ARIB STD-B1 / ARIB STD-B25 ライブラリです。  
 [epgdatacapbon 版](https://github.com/epgdatacapbon/libaribb25) 版と [stz2012 版](https://github.com/stz2012/libarib25) を統合し、同じコードベースから Windows 向けと Linux 向け両方の libaribb25 をビルドできるようになったほか、スカパー！プレミアムサービス (libaribb1) への対応、arib-b25-stream-test への対応、Windows 向け SIMD 実装の統合も行っています。
 
-細心の注意を払ってコードを統合したほか、動作確認を行っています。  
+細心の注意を払ってコードを統合したほか、libaribb1・libaribb25 ともに動作確認を行っています。  
 ただし、私が C/C++ が書けず、コードの実装内容を正確に理解できているわけでもないため、100% 動作する保証はありません。自己の責任のもとでお願いします。  
 何か不備がありましたら Issue や Pull Request までお願いします。可能な範囲で対応します。
 
@@ -124,11 +124,12 @@ make
 sudo make install
 ```
 
-`cmake -B build` で `build/` ディレクトリに Makefile を生成してから、`make` でビルドを実行します。  
+`cmake -B build` で `build/` ディレクトリに Makefile を生成してから、`make` でビルドを実行します。
+
 `sudo make install` でビルドした libaribb1 / libaribb25 をインストールします。  
 `build/` ディレクトリで `sudo make uninstall` を実行することで、インストールしたファイルをアンインストールすることができます。
 
-<br>以下のドキュメントは、元の readme.txt を内容をそのままに Markdown 形式に書き直したものです。  
+以下のドキュメントは、元の readme.txt を内容をそのままに Markdown 形式に書き直したものです。  
 HaijinW 版での変更内容が記載されている [MEMO.txt](https://github.com/tsukumijima/libaribb25/blob/master/MEMO.txt) もあわせて参照してください。
 
 ----
