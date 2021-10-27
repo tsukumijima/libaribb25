@@ -669,12 +669,14 @@ static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, LPCTSTR reader_name)
 
 	p = prv->rbuf;
 
-	n = load_be_uint16(p+4);
 #ifdef ENABLE_ARIB_STD_B1
+ 	n = load_be_uint16(p+44);
  	if(n != 0x9000){ // return code missmatch
- 		return 0;
+ 		// 最終2バイトがリターンコードかどうか未確認なのでエラーとはしない
+ 		// return 0;
 	}
 #else
+	n = load_be_uint16(p+4);
 	if(n != 0x2100){ // return code missmatch
 		return 0;
 	}
