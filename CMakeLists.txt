@@ -136,7 +136,11 @@ link_directories(${PCSC_LIBRARY_DIRS})
 
 # ---------- libaribb1 ----------
 
+if(WIN32)
+add_library(aribb1-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.c aribb25/multi2_simd.c aribb25/ts_section_parser.c aribb25/version_b1.c)
+else()
 add_library(aribb1-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.cc aribb25/ts_section_parser.c aribb25/version_b1.c)
+endif()
 set_target_properties(aribb1-objlib PROPERTIES COMPILE_DEFINITIONS ARIBB1_DLL)
 target_compile_definitions(aribb1-objlib PRIVATE ENABLE_ARIB_STD_B1)
 
@@ -180,7 +184,11 @@ configure_file(aribb25/version_b1.rc.in version_b1.rc @ONLY)
 
 # ---------- libaribb25 ----------
 
+if(WIN32)
+add_library(aribb25-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.c aribb25/multi2_simd.c aribb25/ts_section_parser.c aribb25/version_b25.c)
+else()
 add_library(aribb25-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.cc aribb25/ts_section_parser.c aribb25/version_b25.c)
+endif()
 set_target_properties(aribb25-objlib PROPERTIES COMPILE_DEFINITIONS ARIBB25_DLL)
 
 add_library(aribb25-static STATIC $<TARGET_OBJECTS:aribb25-objlib>)
