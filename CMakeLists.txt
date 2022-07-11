@@ -1,4 +1,12 @@
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 3.1)
+
+#Higher than 3.21
+if(CMAKE_VERSION VERSION_GREATER 3.21)
+cmake_policy(SET CMP0128 NEW)
+endif()
+if(CMAKE_VERSION VERSION_GREATER 3.1)
+cmake_policy(SET CMP0054 NEW)
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE INTERNAL "limit build types" FORCE)
@@ -7,7 +15,7 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING "default build type")
 set(CMAKE_INSTALL_SO_NO_EXE False)
 
 project(arib_std_b25 C)
-enable_language(CXX)
+enable_language("CXX")
 
 include(GitRevision)
 include(GenerateExportHeader)
@@ -92,6 +100,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "(GNU|Clang)")
 	endif()
 
 	if(USE_AVX2)
+#		add_definitions("-DENABLE_MULTI2_SIMD")
 		set(CMAKE_C_FLAGS   "-mavx2 ${CMAKE_C_FLAGS}")
 		set(CMAKE_CXX_FLAGS "-mavx2 ${CMAKE_CXX_FLAGS}")
 	endif()
@@ -99,13 +108,12 @@ if(CMAKE_C_COMPILER_ID MATCHES "(GNU|Clang)")
 		set(CMAKE_C_FLAGS   "-mfpu=neon ${CMAKE_C_FLAGS}")
 		set(CMAKE_CXX_FLAGS "-mfpu=neon ${CMAKE_CXX_FLAGS}")
 	endif()
-elseif(CMAKE_C_COMPILER_ID MATCHES "(MSVC)")
+elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
-	set(CMAKE_STATIC_LIBRARY_PREFIX lib)
-	set(CMAKE_SHARED_LIBRARY_PREFIX lib)
 	set(CMAKE_SUPPRESS_REGENERATION TRUE)
 
 	if(USE_AVX2)
+		add_definitions("-DENABLE_MULTI2_SIMD")
 		set(CMAKE_C_FLAGS   "/arch:AVX2 ${CMAKE_C_FLAGS}")
 		set(CMAKE_CXX_FLAGS "/arch:AVX2 ${CMAKE_CXX_FLAGS}")
 	endif()
@@ -128,7 +136,11 @@ link_directories(${PCSC_LIBRARY_DIRS})
 
 # ---------- libaribb1 ----------
 
+if(WIN32)
+add_library(aribb1-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.c aribb25/multi2_simd.c aribb25/ts_section_parser.c aribb25/version_b1.c)
+else()
 add_library(aribb1-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.cc aribb25/ts_section_parser.c aribb25/version_b1.c)
+endif()
 set_target_properties(aribb1-objlib PROPERTIES COMPILE_DEFINITIONS ARIBB1_DLL)
 target_compile_definitions(aribb1-objlib PRIVATE ENABLE_ARIB_STD_B1)
 
@@ -172,7 +184,11 @@ configure_file(aribb25/version_b1.rc.in version_b1.rc @ONLY)
 
 # ---------- libaribb25 ----------
 
+if(WIN32)
+add_library(aribb25-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.c aribb25/multi2_simd.c aribb25/ts_section_parser.c aribb25/version_b25.c)
+else()
 add_library(aribb25-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.cc aribb25/ts_section_parser.c aribb25/version_b25.c)
+endif()
 set_target_properties(aribb25-objlib PROPERTIES COMPILE_DEFINITIONS ARIBB25_DLL)
 
 add_library(aribb25-static STATIC $<TARGET_OBJECTS:aribb25-objlib>)
