@@ -6,7 +6,9 @@
 #include "arib_std_b25.h"
 #include "arib_std_b25_error_code.h"
 #include "multi2.h"
+#ifdef ENABLE_MULTI2_SIMD
 #include "multi2_simd.h"
+#endif
 #include "ts_common_types.h"
 #include "ts_section_parser.h"
 
