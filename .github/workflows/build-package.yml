@@ -1,0 +1,26 @@
+name: package
+
+on:
+  push:
+    branches: [ "cpack" ]
+jobs:
+  deb_package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential cmake libpcsclite1 libpcsclite-dev pkg-config -y
+      - uses: actions/checkout@v3
+      - name: build
+        run: |
+          cmake -B build
+          cd build
+          make
+          sudo make install
+          sudo cpack -G DEB -P libaribb25 -C CPackConfig.cmake
+      - name: save artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: deb-package
+          path: ./build/arib_std_b25-*.deb
