@@ -207,12 +207,47 @@ static int init_b_cas_card(void *bcas)
 		return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
 	}
 
+#if defined(_WIN32)
+	// この dll/exe と拡張子なしファイル名が同じ ini ファイルのパスを取得
+	// ini ファイルは以下のような構造
+	// [CardReader]
+	// Name=SCM Microsystems Inc. SCR33x USB Smart Card Reader 0
+	TCHAR ini_file_path[MAX_PATH];
+	GetModuleFileName(NULL, ini_file_path, MAX_PATH);
+	_tcscpy_s(_tcsrchr(ini_file_path, _T('.')), MAX_PATH, _T(".ini"));
+
+	// card_reader_name に GetPrivateProfileString() で取得したカードリーダー名を入れる
+	// ini ファイルや値がないなどカードリーダー名を取得できなかった場合は、card_reader_name は空文字列になる
+	TCHAR *card_reader_name;
+	card_reader_name = (TCHAR *)malloc(1024);
+	GetPrivateProfileString(_T("CardReader"), _T("Name"), _T(""), card_reader_name, 1024, ini_file_path);
+	if(card_reader_name == NULL){
+		card_reader_name = _T("");
+	}
+#endif
+
 	while( prv->reader[0] != 0 ){
+
+#if defined(_WIN32)
+		// 取得したカードリーダー名のカードリーダーなら接続を試みる
+		// もしカードリーダー名が空文字列ならすべてのカードリーダーに接続を試み、最初に見つかったカードリーダーに接続する
+		if(_tcscmp(card_reader_name, prv->reader) == 0 || _tcscmp(card_reader_name, _T("")) == 0){
+			if(connect_card(prv, prv->reader)){
+				break;
+			}
+		}
+#else
 		if(connect_card(prv, prv->reader)){
 			break;
 		}
+#endif
+
 		prv->reader += (_tcslen(prv->reader) + 1);
 	}
+
+#if defined(_WIN32)
+	free(card_reader_name);
+#endif
 
 	if(prv->card == 0){
 		return B_CAS_CARD_ERROR_ALL_READERS_CONNECTION_FAILED;
