@@ -19,6 +19,11 @@
 #  define _tcslen strlen
 #endif
 
+#if defined(_WIN32)
+  // ref: https://stackoverflow.com/a/6924293/17124142
+	EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+#endif
+
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  inner structures
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -213,8 +218,11 @@ static int init_b_cas_card(void *bcas)
 	// [CardReader]
 	// Name=SCM Microsystems Inc. SCR33x USB Smart Card Reader 0
 	TCHAR ini_file_path[MAX_PATH];
-	GetModuleFileName(NULL, ini_file_path, MAX_PATH);
+	GetModuleFileName((HINSTANCE)&__ImageBase, ini_file_path, MAX_PATH);
 	_tcscpy_s(_tcsrchr(ini_file_path, _T('.')), MAX_PATH, _T(".ini"));
+
+	OutputDebugString(TEXT("libaribb25: ini file path:"));
+	OutputDebugString(ini_file_path);
 
 	// card_reader_name に GetPrivateProfileString() で取得したカードリーダー名を入れる
 	// ini ファイルや値がないなどカードリーダー名を取得できなかった場合は、card_reader_name は空文字列になる
@@ -224,16 +232,31 @@ static int init_b_cas_card(void *bcas)
 	if(card_reader_name == NULL){
 		card_reader_name = _T("");
 	}
+
+	if(_tcscmp(card_reader_name, _T("")) == 0){
+		OutputDebugString(TEXT("libaribb25: no card reader name specified in ini file."));
+	} else {
+		OutputDebugString(TEXT("libaribb25: specified card reader name:"));
+		OutputDebugString(card_reader_name);
+	}
 #endif
 
 	while( prv->reader[0] != 0 ){
 
 #if defined(_WIN32)
+		OutputDebugString(TEXT("libaribb25: detected card reader name:"));
+		OutputDebugString(prv->reader);
+
 		// 取得したカードリーダー名のカードリーダーなら接続を試みる
 		// もしカードリーダー名が空文字列ならすべてのカードリーダーに接続を試み、最初に見つかったカードリーダーに接続する
 		if(_tcscmp(card_reader_name, prv->reader) == 0 || _tcscmp(card_reader_name, _T("")) == 0){
 			if(connect_card(prv, prv->reader)){
+				OutputDebugString(TEXT("libaribb25: connected card reader name:"));
+				OutputDebugString(prv->reader);
 				break;
+			} else {
+				OutputDebugString(TEXT("libaribb25: failed to connect card reader name:"));
+				OutputDebugString(prv->reader);
 			}
 		}
 #else
@@ -250,6 +273,9 @@ static int init_b_cas_card(void *bcas)
 #endif
 
 	if(prv->card == 0){
+#if defined(_WIN32)
+		OutputDebugString(TEXT("libaribb25: no card reader connected"));
+#endif
 		return B_CAS_CARD_ERROR_ALL_READERS_CONNECTION_FAILED;
 	}
 
