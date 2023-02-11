@@ -46,7 +46,7 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv);
 #ifdef ENABLE_ARIB_STREAM_TEST
 static void test_arib_std_b25(OPTION *opt);
 #else
-static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt);
+static int test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt);
 #endif
 static void show_bcas_power_on_control_info(B_CAS_CARD *bcas);
 static void run_multi2_benchmark_test(OPTION *opt);
@@ -54,6 +54,7 @@ static void run_multi2_benchmark_test(OPTION *opt);
 int _tmain(int argc, TCHAR **argv)
 {
 	int n;
+	int ret = 0;
 	OPTION opt;
 
 #if defined(_WIN32)
@@ -84,7 +85,10 @@ int _tmain(int argc, TCHAR **argv)
 	test_arib_std_b25(&opt);
 #else
 	for(;n<=(argc-2);n+=2){
-		test_arib_std_b25(argv[n+0], argv[n+1], &opt);
+		ret = test_arib_std_b25(argv[n+0], argv[n+1], &opt);
+		if(ret != 0){
+			exit(EXIT_FAILURE);
+		}
 	}
 #endif
 
@@ -237,7 +241,7 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 #ifdef ENABLE_ARIB_STREAM_TEST
 static void test_arib_std_b25(OPTION *opt)
 #else
-static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
+static int test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 #endif
 {
 #ifdef ENABLE_ARIB_STREAM_TEST
@@ -245,7 +249,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 #else
 	int code,i,n,m;
 #endif
-	int sfd,dfd;
+	int sfd,dfd,ret;
 
 #ifndef ENABLE_ARIB_STREAM_TEST
 	int64_t total;
@@ -280,6 +284,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	b25 = NULL;
 	bcas = NULL;
 	_data = NULL;
+	ret  = 0;
 
 #ifdef ENABLE_ARIB_STREAM_TEST
 #if defined(_WIN32)
@@ -290,6 +295,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	sfd = _topen(src, _O_BINARY|_O_RDONLY|_O_SEQUENTIAL);
 	if(sfd < 0){
 		_ftprintf(stderr, _T("error - failed on _open(%s) [src]\n"), src);
+		ret = 1;
 		goto LAST;
 	}
 
@@ -301,24 +307,28 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	b25 = create_arib_std_b25();
 	if(b25 == NULL){
 		_ftprintf(stderr, _T("error - failed on create_arib_std_b25()\n"));
+		ret = 1;
 		goto LAST;
 	}
 
 	code = b25->set_multi2_round(b25, opt->round);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_multi2_round() : code=%d\n"), code);
+		ret = 1;
 		goto LAST;
 	}
 
 	code = b25->set_strip(b25, opt->strip);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_strip() : code=%d\n"), code);
+		ret = 1;
 		goto LAST;
 	}
 
 	code = b25->set_emm_proc(b25, opt->emm);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_emm_proc() : code=%d\n"), code);
+		ret = 1;
 		goto LAST;
 	}
 
@@ -326,6 +336,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	code = b25->set_simd_mode(b25, opt->simd_instruction);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_simd_mode() : code=%d\n"), code);
+		ret = 1;
 		goto LAST;
 	}
 #endif
@@ -333,18 +344,21 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	bcas = create_b_cas_card();
 	if(bcas == NULL){
 		_ftprintf(stderr, _T("error - failed on create_b_cas_card()\n"));
+		ret = 1;
 		goto LAST;
 	}
 
 	code = bcas->init(bcas);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on B_CAS_CARD::init() : code=%d\n"), code);
+		ret = 1;
 		goto LAST;
 	}
 
 	code = b25->set_b_cas_card(b25, bcas);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::set_b_cas_card() : code=%d\n"), code);
+		ret = 1;
 		goto LAST;
 	}
 
@@ -352,6 +366,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	dfd = _topen(dst, _O_BINARY|_O_WRONLY|_O_SEQUENTIAL|_O_CREAT|_O_TRUNC, _S_IREAD|_S_IWRITE);
 	if(dfd < 0){
 		_ftprintf(stderr, _T("error - failed on _open(%s) [dst]\n"), dst);
+		ret = 1;
 		goto LAST;
 	}
 #endif
@@ -369,6 +384,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 		code = b25->put(b25, &sbuf);
 		if(code < 0){
 			_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::put() : code=%d\n"), code);
+#ifdef ENABLE_ARIB_STREAM_TEST
 			dbuf.data = data;
 			dbuf.size = n;
 			if(code < ARIB_STD_B25_ERROR_NO_ECM_IN_HEAD_32M){
@@ -389,10 +405,15 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 					_data = p;
 				}
 			}
+#else
+			ret = 1;
+			goto LAST;
+#endif
 		}else{
 			code = b25->get(b25, &dbuf);
 			if(code < 0){
 				_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::get() : code=%d\n"), code);
+				ret = 1;
 				goto LAST;
 			}
 		}
@@ -401,6 +422,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 			n = _write(dfd, dbuf.data, dbuf.size);
 			if(n != dbuf.size){
 				_ftprintf(stderr, _T("error failed on _write(%d)\n"), dbuf.size);
+				ret = 1;
 				goto LAST;
 			}
 		}
@@ -439,12 +461,14 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	code = b25->flush(b25);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::flush() : code=%d\n"), code);
+		ret = 1;
 		goto LAST;
 	}
 
 	code = b25->get(b25, &dbuf);
 	if(code < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::get() : code=%d\n"), code);
+		ret = 1;
 		goto LAST;
 	}
 
@@ -452,6 +476,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 		n = _write(dfd, dbuf.data, dbuf.size);
 		if(n != dbuf.size){
 			_ftprintf(stderr, _T("error - failed on _write(%d)\n"), dbuf.size);
+			ret = 1;
 			goto LAST;
 		}
 	}
@@ -483,12 +508,14 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	n = b25->get_program_count(b25);
 	if(n < 0){
 		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::get_program_count() : code=%d\n"), code);
+		ret = 1;
 		goto LAST;
 	}
 	for(i=0;i<n;i++){
 		code = b25->get_program_info(b25, &pgrm, i);
 		if(code < 0){
 			_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::get_program_info(%d) : code=%d\n"), i, code);
+			ret = 1;
 			goto LAST;
 		}
 		if(pgrm.ecm_unpurchased_count > 0){
@@ -533,6 +560,9 @@ LAST:
 		bcas->release(bcas);
 		bcas = NULL;
 	}
+#ifndef ENABLE_ARIB_STREAM_TEST
+	return ret;
+#endif
 }
 
 static void show_bcas_power_on_control_info(B_CAS_CARD *bcas)
