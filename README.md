@@ -109,6 +109,14 @@ Visual Studio 2019 で arib_std_b25.sln を開きます。
 
 ビルドが完了すると、`Win32/Release` または `x64/Release` 以下にバイナリが生成されています。
 
+### Windows (Visual Studio Tools Command Prompt)
+
+スタートメニューから「x64 Native Tools Command Prompt for VS 2022」を起動して以下を実行する。
+
+```command
+msbuild arib_std_b25.sln /p:Configuration=Release /p:Platform=x64
+```
+
 ### Ubuntu (CMake)
 
 ```
