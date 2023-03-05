@@ -14,7 +14,7 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING "default build type")
 
 set(CMAKE_INSTALL_SO_NO_EXE False)
 
-project(arib_std_b25 C)
+project(libaribb25 C VERSION 0.2.7 LANGUAGES C CXX)
 enable_language("CXX")
 
 include(GitRevision)

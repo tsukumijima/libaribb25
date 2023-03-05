@@ -3,7 +3,7 @@ on: push
 
 jobs:
   deb-package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: install dependency
         run: |
@@ -20,5 +20,4 @@ jobs:
       - name: save artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: deb-package
-          path: ./build/arib_std_b25-*.deb
+          path: ./build/libaribb25-*.deb
