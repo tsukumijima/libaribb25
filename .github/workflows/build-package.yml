@@ -17,7 +17,11 @@ jobs:
           make
           sudo make install
           sudo cpack -G DEB -P libaribb25 -C CPackConfig.cmake
+      - name: get output name
+        id: get_output_name
+        run: |
+          echo "deb_name=$(ls build/libaribb25-*.deb)" >> "$GITHUB_OUTPUT"
       - name: save artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          path: ./build/libaribb25-*.deb
+          path: ${{ steps.get_output_name.outputs.deb_name }}
