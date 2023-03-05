@@ -26,7 +26,9 @@ jobs:
       - name: build
         run: cmake --build build
       - name: test
-        run: ./build/b25 2>&1 | grep --color=always "ARIB STD-B25"
+        run: |
+          ./build/b1 2>&1 | grep --color=always "ARIB STD-B1"
+          ./build/b25 2>&1 | grep --color=always "ARIB STD-B25"
 
   arm:
     name: ARM
@@ -59,7 +61,9 @@ jobs:
       - name: build
         run: docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build cmake --build .
       - name: test
-        run: docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './b25 2>&1 | grep --color=always "ARIB STD-B25"'
+        run: |
+          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './b1 2>&1 | grep --color=always "ARIB STD-B1"'
+          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './b25 2>&1 | grep --color=always "ARIB STD-B25"'
 
   macosx:
     name: macOS X
@@ -78,7 +82,9 @@ jobs:
       - name: build
         run: cmake --build build
       - name: test
-        run: ./build/b25 2>&1 | grep --color=always "ARIB STD-B25"
+        run: |
+          ./build/b1 2>&1 | grep --color=always "ARIB STD-B1"
+          ./build/b25 2>&1 | grep --color=always "ARIB STD-B25"
 
   windows:
     name: Windows
@@ -90,11 +96,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - name: configure
-        run: |
-          cmake --version
-          cmake -B build
       - name: build
-        run: cmake --build build
+        run: |
+          msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v142
+          msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v142
       - name: test
-        run: build\Debug\b25.exe 2>&1 | findstr "ARIB STD-B25"
+        run: |
+          Win32\Release\b1.exe 2>&1 | findstr "ARIB STD-B1"
+          x64\Release\b1.exe 2>&1 | findstr "ARIB STD-B1"
+          Win32\Release\b25.exe 2>&1 | findstr "ARIB STD-B25"
+          x64\Release\b25.exe 2>&1 | findstr "ARIB STD-B25"
