@@ -1,3 +1,4 @@
 ARG IMAGE
 FROM ${IMAGE}
-RUN apt-get update && apt-get -y install build-essential cmake cmake-data libpcsclite-dev
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y build-essential cmake cmake-data libpcsclite-dev pkg-config

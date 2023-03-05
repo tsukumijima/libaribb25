@@ -5,11 +5,9 @@ jobs:
   deb-package:
     runs-on: ubuntu-20.04
     steps:
-      - name: install dependency
-        run: |
-          sudo apt-get update
-          sudo apt-get install build-essential cmake libpcsclite1 libpcsclite-dev pkg-config -y
       - uses: actions/checkout@v3
+      - name: setup
+        run: sudo apt-get install -y build-essential cmake cmake-data libpcsclite-dev pkg-config
       - name: build
         run: |
           cmake -B build
@@ -20,8 +18,46 @@ jobs:
       - name: get output name
         id: get_output_name
         run: |
-          echo "deb_path=$(ls build/libaribb25-*.deb)" >> "$GITHUB_OUTPUT"
-          echo "deb_file=$(basename $(ls build/libaribb25-*.deb))" >> "$GITHUB_OUTPUT"
+          echo "deb_path=$(ls build/libaribb25_*.deb)" >> "$GITHUB_OUTPUT"
+          echo "deb_file=$(basename $(ls build/libaribb25_*.deb))" >> "$GITHUB_OUTPUT"
+      - name: save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.get_output_name.outputs.deb_file }}
+          path: ${{ steps.get_output_name.outputs.deb_path }}
+
+  deb-package-arm:
+    strategy:
+      matrix:
+        image:
+          - arm64v8/ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v2
+      - uses: docker/setup-buildx-action@v2
+
+      - name: setup
+        uses: docker/build-push-action@v3
+        with:
+          context: .github/workflows/
+          tags: ${{ matrix.image }}:build
+          build-args: IMAGE=${{ matrix.image }}:20.04
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+          load: true
+
+      - name: build
+        run: |
+          mkdir build
+          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c 'cmake --version && cmake ..'
+          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c \
+            'cpack -G DEB -P libaribb25 -C CPackConfig.cmake'
+      - name: get output name
+        id: get_output_name
+        run: |
+          echo "deb_path=$(ls build/libaribb25_*.deb)" >> "$GITHUB_OUTPUT"
+          echo "deb_file=$(basename $(ls build/libaribb25_*.deb))" >> "$GITHUB_OUTPUT"
       - name: save artifacts
         uses: actions/upload-artifact@v3
         with:
