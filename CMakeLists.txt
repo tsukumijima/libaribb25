@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-#Higher than 3.21
+# Higher than 3.21
 if(CMAKE_VERSION VERSION_GREATER 3.21)
 cmake_policy(SET CMP0128 NEW)
 endif()
@@ -22,7 +22,7 @@ include(GenerateExportHeader)
 include(GNUInstallDirs)
 find_package(PCSC REQUIRED)
 
-if (UNIX OR MSYS)
+if(UNIX OR MSYS)
 	find_program(LDCONFIG_EXECUTABLE "ldconfig")
 	set(WITH_PCSC_PACKAGE "libpcsclite" CACHE STRING "pkg-config package name for PC/SC")
 	set(WITH_PCSC_LIBRARY "" CACHE STRING "library name for PC/SC")
@@ -34,6 +34,32 @@ endif()
 option(USE_AVX2 "enable AVX2" OFF)
 if(NOT WIN32)
 	option(USE_NEON "enable NEON" OFF)
+endif()
+
+if(UNIX AND NOT CYGWIN)
+	# アーキテクチャ情報を取得
+	set(ARCH ${CMAKE_SYSTEM_PROCESSOR})
+
+	# アーキテクチャに応じたGNUトリプレットを生成
+	if(ARCH STREQUAL "x86_64")
+		set(ARCH_TRIPLET "x86_64-linux-gnu")
+	elseif(ARCH STREQUAL "aarch64")
+		set(ARCH_TRIPLET "aarch64-linux-gnu")
+	else()
+		message(WARNING "Unknown architecture: ${ARCH}. Defaulting to x86_64.")
+		set(ARCH_TRIPLET "x86_64-linux-gnu")
+	endif()
+
+	# インストール先のディレクトリを指定
+	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+		set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "default install path" FORCE)
+	endif()
+
+	if(CMAKE_INSTALL_PREFIX STREQUAL "/usr")
+		set(CMAKE_INSTALL_LIBDIR "lib/${ARCH_TRIPLET}")
+	else()
+		set(CMAKE_INSTALL_LIBDIR "lib")
+	endif()
 endif()
 
 # ---------- set variable (libaribb1) ----------
