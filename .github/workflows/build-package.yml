@@ -2,6 +2,44 @@ name: Package
 on: push
 
 jobs:
+  windows:
+    name: Windows
+    strategy:
+      matrix:
+        os:
+          - windows-2019
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: setup msbuild
+        uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/checkout@v3
+      - name: build
+        run: |
+          msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v142
+          msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v142
+      - name: get output name
+        id: get_output_name
+        run: |
+          $version = bash -c 'LC_ALL=ja_JP.utf8 grep -oP ''#define VERSION_STRING ""\\K[^""]+'' aribb25/td.c'
+          echo "archive_path=libaribb25_${version}_windows.zip" >> $ENV:GITHUB_OUTPUT
+      - name: package
+        run: |
+          mkdir libaribb25/
+          mkdir libaribb25/32bit/
+          mkdir libaribb25/64bit/
+          Copy-Item -Path ".\Win32\Release\*" -Destination ".\libaribb25\32bit\" -Recurse -Force
+          Copy-Item -Path ".\x64\Release\*" -Destination ".\libaribb25\64bit\" -Recurse -Force
+          Copy-Item -Path libaribb25\32bit\libaribb1.dll -Destination libaribb25\32bit\B1Decoder.dll -Force
+          Copy-Item -Path libaribb25\64bit\libaribb1.dll -Destination libaribb25\64bit\B1Decoder.dll -Force
+          Copy-Item -Path libaribb25\32bit\libaribb25.dll -Destination libaribb25\32bit\B25Decoder.dll -Force
+          Copy-Item -Path libaribb25\64bit\libaribb25.dll -Destination libaribb25\64bit\B25Decoder.dll -Force
+          7z a -tzip ${{ steps.get_output_name.outputs.archive_path }} libaribb25
+      - name: save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.get_output_name.outputs.archive_path }}
+          path: ${{ steps.get_output_name.outputs.archive_path }}
+
   deb-package:
     runs-on: ubuntu-20.04
     steps:
