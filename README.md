@@ -69,9 +69,75 @@ B25Decoder.cpp / B25Decoder.h が一見それのように見えますが、実�
 > そもそも関数名が UpperCamelCase から snake_case に変更されていることからして、本来の B25Decoder インターフェイスとの互換性はありません。  
 おそらく Linux で B25Decoder のようなインターフェイスを実装した libaribb25 のラッパーとしてのコードだと思われますが、このコードが含まれていた epgdatacapbon 版でも現在は使われておらず、どのような意図で利用されていたコードなのかは不明です。本来削除しても問題はないのですが、念のため残しています。
 
+### ini ファイルでカードリーダー名を指定してスクランブル解除を行う機能の追加 (Windows のみ)
+
+Windows 版のみ、独自に B25Decoder.dll や arib-b25-stream-test.exe などの各種 .exe / .dll と同じ名前の ini ファイルでカードリーダー名を指定してスクランブル解除を行う機能を追加しました。  
+主に EDCB で B-CAS カードと C-CAS カードの両方を併用したい場合に利用できると思います。
+
+ini ファイルを配置しない場合の動作は、通常の B25(B1)Decoder.dll / b25(b1).exe / arib-b25(b1)-stream-test.exe と同じです。  
+具体的には、一番先に検出されたカードリーダーがスクランブル解除に利用されます。
+
+下記の例を参考に (.exe or .dll と同じファイル名).ini 内の `Name=` プロパティにカードリーダー名を記述すると、指定されたカードリーダーに接続されている B-CAS or C-CAS or SPHD カードを使ってスクランブル解除を行います。  
+カードリーダー名は TVTest の TS プロセッサーで表示されているものがそのまま使えるので、コピペするのがおすすめです。
+
+#### 注意
+
+- ini ファイルで指定されたカードリーダーが PC に接続されていない場合、スクランブル解除に失敗します (スクランブルされたままの TS が返される) 。
+  - 無理に復号しようとしてファイルが壊れたりとかはないので、後から解除すること自体は可能なはずです。
+- B25Decoder.dll と同じフォルダに winscard.dll を配置している場合は、その仮想 winscard.dll の実装で提供されている仮想カードリーダーの名前しか指定できなくなります。注意してください。
+  - たとえば radi-sh 版 BonDriver の内蔵カードリーダーなら `Plex PX-x3U4 Card Reader 0` 、SoftCas なら `@OishiiSlurper` になります。
+  - Windows ネイティブの winscard.dll の機能を上書きする形になるため、仮想 winscard.dll が配置されている状態では、別途物理カードリーダーが接続されていたとしても libaribb25 から認識されなくなります。
+  - このため、仮想 winscard.dll を利用している環境でカードリーダー名指定機能を使う意味はありません。
+
+#### 利用例
+
+- B-CAS: TVTest で `SCM Microsystems Inc. SCR33x USB Smart Card Reader 0` として認識されるカードリーダーに接続中
+- C-CAS: TVTest で `SCM Microsystems Inc. SCR33x USB Smart Card Reader 1`として認識されるカードリーダーに接続中
+
+の環境だと仮定します。
+
+まず、EDCB (EpgDataCap_Bon.exe) と同じフォルダに B25Decoder.dll と、それをコピーした B25Decoder-CATV.dll を配置します。
+
+```
+[CardReader]
+Name=SCM Microsystems Inc. SCR33x USB Smart Card Reader 0
+```
+
+次に新規作成した B25Decoder.ini に上記の内容を、
+
+```
+[CardReader]
+Name=SCM Microsystems Inc. SCR33x USB Smart Card Reader 1
+```
+
+同じく新規作成した B25Decoder-CATV.ini に上記の内容を書き込んで保存します。
+
+```
+...
+[SET]
+FFFFFFFF=B25Decoder.dll
+0004FFFF=B25Decoder.dll
+0006FFFF=B25Decoder.dll
+0007FFFF=B25Decoder.dll
+000AFFFF=B1Decoder.dll
+0001FFFF=B1Decoder.dll
+0003FFFF=B1Decoder.dll
+FFFEFFFF=B25Decoder-CATV.dll
+FFFAFFFF=B25Decoder-CATV.dll
+FFFDFFFF=B25Decoder-CATV.dll
+FFF9FFFF=B25Decoder-CATV.dll
+...
+```
+
+最後に、EDCB の BonCtrl.ini の [SET] 以下の記述を、上記の通りに変更して保存します。  
+これで B-CAS カードと C-CAS カードを同じ PC に接続した状態で、地上波と CATV (C-CAS が必要なトランスモジュレーション方式 (ISDB-C) チャンネル) を両方受信できるようになるはずです！
+
+> BonCtrl.ini に追記した行の先頭の `FFFE`,`FFFA`,`FFFD`,`FFF9` はいずれも CATV チャンネルの network_id を示しています。  
+> その次の FFFF は、同じ network_id のすべてのチャンネルに対して同じデコーダーを利用することを示しています。
+
 ### SIMD 実装の差異
 
-基本的に Windows と Linux でコードベースは共通になっていますが、MULTI2 の復号周りのコードに関しては両者ともに大きく変更されていたため、マージは行いませんでした。  
+基本的に Windows と Linux でコードベースは共通ですが、MULTI2 の復号周りのコードに関しては両者ともに大きく変更されていたため、マージは行いませんでした。  
 multi2.c が HaijinW 版由来のオリジナルに近い MULTI2 復号コードで、multi2.cc が stz2012 版由来の C++ で書き直された MULTI2 復号コードです。  
 Windows (Visual Studio) でビルドする場合は HaijinW 版由来の SIMD 実装 (ENABLE_MULTI2_SIMD) が、Linux (CMake) でビルドする場合は stz2012 版由来の SIMD 実装が利用されるように調整しています。  
 
