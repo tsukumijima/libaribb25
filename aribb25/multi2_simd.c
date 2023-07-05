@@ -64,42 +64,42 @@ static bool is_mask_initialized = false;
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  function prottypes (private method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-static __forceinline const uint32_t left_rotate_uint32_for_simd(const uint32_t value, const uint32_t rotate);
-static __forceinline __m128i left_rotate_m128i(const __m128i *value, const int rotate);
-static __forceinline void round_pi1(uint32_t *left, uint32_t *right);
-static __forceinline void round_pi2(uint32_t *left, uint32_t *right, const uint32_t k1);
-static __forceinline void round_pi3(uint32_t *left, uint32_t *right, const uint32_t k2, const uint32_t k3);
-static __forceinline void round_pi4(uint32_t *left, uint32_t *right, const uint32_t k4);
-static __forceinline __m128i byte_swap_sse2(const __m128i *Value);
-static __forceinline void round_pi1_sse2(__m128i *left, __m128i *right);
-static __forceinline void round_pi2_sse2(__m128i *left, __m128i *right, const __m128i *key1);
-static __forceinline void round_pi3_sse2(__m128i *left, __m128i *right, const __m128i *key2, const __m128i *key3);
-static __forceinline void round_pi4_sse2(__m128i *left, __m128i *right, const __m128i *key4);
+static inline const uint32_t left_rotate_uint32_for_simd(const uint32_t value, const uint32_t rotate);
+static inline __m128i left_rotate_m128i(const __m128i *value, const int rotate);
+static inline void round_pi1(uint32_t *left, uint32_t *right);
+static inline void round_pi2(uint32_t *left, uint32_t *right, const uint32_t k1);
+static inline void round_pi3(uint32_t *left, uint32_t *right, const uint32_t k2, const uint32_t k3);
+static inline void round_pi4(uint32_t *left, uint32_t *right, const uint32_t k4);
+static inline __m128i byte_swap_sse2(const __m128i *Value);
+static inline void round_pi1_sse2(__m128i *left, __m128i *right);
+static inline void round_pi2_sse2(__m128i *left, __m128i *right, const __m128i *key1);
+static inline void round_pi3_sse2(__m128i *left, __m128i *right, const __m128i *key2, const __m128i *key3);
+static inline void round_pi4_sse2(__m128i *left, __m128i *right, const __m128i *key4);
 
 #ifdef OPTIMIZE_MULTI2_FOR_PIPELINE
-static __forceinline void round_pi1_sse2_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi1_sse2_with_3sets(__m128i *left1, __m128i *right1,
 													__m128i *left2, __m128i *right2,
 													__m128i *left3, __m128i *right3);
-static __forceinline void round_pi2_sse2_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi2_sse2_with_3sets(__m128i *left1, __m128i *right1,
 													__m128i *left2, __m128i *right2,
 													__m128i *left3, __m128i *right3,
 													const __m128i *key1);
-static __forceinline void round_pi3_sse2_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi3_sse2_with_3sets(__m128i *left1, __m128i *right1,
 													__m128i *left2, __m128i *right2,
 													__m128i *left3, __m128i *right3,
 													const __m128i *key2, const __m128i *key3);
-static __forceinline void round_pi4_sse2_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi4_sse2_with_3sets(__m128i *left1, __m128i *right1,
 													__m128i *left2, __m128i *right2,
 													__m128i *left3, __m128i *right3,
 													const __m128i *key4);
 #endif	// OPTIMIZE_MULTI2_FOR_PIPELINE
 
 #ifdef ENABLE_MULTI2_SSSE3
-static __forceinline __m128i byte_swap_ssse3(const __m128i *value);
-static __forceinline void round_pi3_ssse3(__m128i *left, __m128i *right,
+static inline __m128i byte_swap_ssse3(const __m128i *value);
+static inline void round_pi3_ssse3(__m128i *left, __m128i *right,
 										  const __m128i *key2, const __m128i *key3);
 #ifdef OPTIMIZE_MULTI2_FOR_PIPELINE
-static __forceinline void round_pi3_ssse3_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi3_ssse3_with_3sets(__m128i *left1, __m128i *right1,
 													 __m128i *left2, __m128i *right2,
 													 __m128i *left3, __m128i *right3,
 													 const __m128i *key2, const __m128i *key3);
@@ -107,27 +107,27 @@ static __forceinline void round_pi3_ssse3_with_3sets(__m128i *left1, __m128i *ri
 #endif	// ENABLE_MULTI2_SSSE3
 
 #ifdef ENABLE_MULTI2_AVX2
-static __forceinline __m256i byte_swap_avx2(const __m256i *value);
-static __forceinline __m256i left_rotate_m256i(const __m256i *value, const int rotate);
-static __forceinline __m256i shift_leftsi64_m256i(__m256i value);
-static __forceinline __m256i shift_rightsi192_m256i(__m256i value);
-static __forceinline void round_pi1_avx2(__m256i *left, __m256i *right);
-static __forceinline void round_pi2_avx2(__m256i *left, __m256i *right, const __m256i *key1);
-static __forceinline void round_pi3_avx2(__m256i *left, __m256i *right, const __m256i *key2, const __m256i *key3);
-static __forceinline void round_pi4_avx2(__m256i *left, __m256i *right, const __m256i *key4);
+static inline __m256i byte_swap_avx2(const __m256i *value);
+static inline __m256i left_rotate_m256i(const __m256i *value, const int rotate);
+static inline __m256i shift_leftsi64_m256i(__m256i value);
+static inline __m256i shift_rightsi192_m256i(__m256i value);
+static inline void round_pi1_avx2(__m256i *left, __m256i *right);
+static inline void round_pi2_avx2(__m256i *left, __m256i *right, const __m256i *key1);
+static inline void round_pi3_avx2(__m256i *left, __m256i *right, const __m256i *key2, const __m256i *key3);
+static inline void round_pi4_avx2(__m256i *left, __m256i *right, const __m256i *key4);
 #ifdef OPTIMIZE_MULTI2_FOR_PIPELINE
-static __forceinline void round_pi1_avx2_with_3sets(__m256i *left1, __m256i *right1,
+static inline void round_pi1_avx2_with_3sets(__m256i *left1, __m256i *right1,
 													__m256i *left2, __m256i *right2,
 													__m256i *left3, __m256i *right3);
-static __forceinline void round_pi2_avx2_with_3sets(__m256i *left1, __m256i *right1,
+static inline void round_pi2_avx2_with_3sets(__m256i *left1, __m256i *right1,
 													__m256i *left2, __m256i *right2,
 													__m256i *left3, __m256i *right3,
 													const __m256i *key1);
-static __forceinline void round_pi3_avx2_with_3sets(__m256i *left1, __m256i *right1,
+static inline void round_pi3_avx2_with_3sets(__m256i *left1, __m256i *right1,
 													__m256i *left2, __m256i *right2,
 													__m256i *left3, __m256i *right3,
 													const __m256i *key2, const __m256i *key3);
-static __forceinline void round_pi4_avx2_with_3sets(__m256i *left1, __m256i *right1,
+static inline void round_pi4_avx2_with_3sets(__m256i *left1, __m256i *right1,
 													__m256i *left2, __m256i *right2,
 													__m256i *left3, __m256i *right3,
 													const __m256i *key4);
@@ -137,18 +137,18 @@ static __forceinline void round_pi4_avx2_with_3sets(__m256i *left1, __m256i *rig
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  private method implementation
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-static __forceinline const uint32_t left_rotate_uint32_for_simd(const uint32_t value, const uint32_t rotate)
+static inline const uint32_t left_rotate_uint32_for_simd(const uint32_t value, const uint32_t rotate)
 {
 	return _lrotl(value, rotate);
 }
 
-static __forceinline void round_pi1(uint32_t *left, uint32_t *right)
+static inline void round_pi1(uint32_t *left, uint32_t *right)
 {
 	// Elementary Encryption Function ƒÎ1
 	*right ^= *left;
 }
 
-static __forceinline void round_pi2(uint32_t *left, uint32_t *right, const uint32_t k1)
+static inline void round_pi2(uint32_t *left, uint32_t *right, const uint32_t k1)
 {
 	// Elementary Encryption Function ƒÎ2
 	const uint32_t y = *right + k1;
@@ -156,7 +156,7 @@ static __forceinline void round_pi2(uint32_t *left, uint32_t *right, const uint3
 	*left ^= left_rotate_uint32_for_simd(z, 4UL) ^ z;
 }
 
-static __forceinline void round_pi3(uint32_t *left, uint32_t *right, const uint32_t k2, const uint32_t k3)
+static inline void round_pi3(uint32_t *left, uint32_t *right, const uint32_t k2, const uint32_t k3)
 {
 	// Elementary Encryption Function ƒÎ3
 	const uint32_t y = *left + k2;
@@ -167,19 +167,19 @@ static __forceinline void round_pi3(uint32_t *left, uint32_t *right, const uint3
 	*right ^= (left_rotate_uint32_for_simd(c, 16UL) ^ (c | *left));
 }
 
-static __forceinline void round_pi4(uint32_t *left, uint32_t *right, const uint32_t k4)
+static inline void round_pi4(uint32_t *left, uint32_t *right, const uint32_t k4)
 {
 	// Elementary Encryption Function ƒÎ4
 	const uint32_t y = *right + k4;
 	*left ^= (left_rotate_uint32_for_simd(y, 2UL) + y + 1UL);
 }
 
-static __forceinline __m128i left_rotate_m128i(const __m128i *value, const int Rotate)
+static inline __m128i left_rotate_m128i(const __m128i *value, const int Rotate)
 {
 	return _mm_or_si128(_mm_slli_epi32(*value, Rotate), _mm_srli_epi32(*value, 32 - Rotate));
 }
 
-static __forceinline __m128i byte_swap_sse2(const __m128i *value)
+static inline __m128i byte_swap_sse2(const __m128i *value)
 {
 	__m128i t0 = _mm_srli_epi16(*value, 8);
 	__m128i t1 = _mm_slli_epi16(*value, 8);
@@ -187,12 +187,12 @@ static __forceinline __m128i byte_swap_sse2(const __m128i *value)
 	return left_rotate_m128i(&t2, 16);
 }
 
-static __forceinline void round_pi1_sse2(__m128i *left, __m128i *right)
+static inline void round_pi1_sse2(__m128i *left, __m128i *right)
 {
 	*right = _mm_xor_si128(*right, *left);
 }
 
-static __forceinline void round_pi2_sse2(__m128i *left, __m128i *right, const __m128i *key1)
+static inline void round_pi2_sse2(__m128i *left, __m128i *right, const __m128i *key1)
 {
 	__m128i t;
 
@@ -203,7 +203,7 @@ static __forceinline void round_pi2_sse2(__m128i *left, __m128i *right, const __
 	*left = _mm_xor_si128(*left, t);
 }
 
-static __forceinline void round_pi3_sse2(__m128i *left, __m128i *right, const __m128i *key2, const __m128i *key3)
+static inline void round_pi3_sse2(__m128i *left, __m128i *right, const __m128i *key2, const __m128i *key3)
 {
 	__m128i t;
 
@@ -217,7 +217,7 @@ static __forceinline void round_pi3_sse2(__m128i *left, __m128i *right, const __
 	*right = _mm_xor_si128(*right, t);
 }
 
-static __forceinline void round_pi4_sse2(__m128i *left, __m128i *right, const __m128i *key4)
+static inline void round_pi4_sse2(__m128i *left, __m128i *right, const __m128i *key4)
 {
 	__m128i t;
 
@@ -229,7 +229,7 @@ static __forceinline void round_pi4_sse2(__m128i *left, __m128i *right, const __
 
 #ifdef OPTIMIZE_MULTI2_FOR_PIPELINE
 
-static __forceinline void round_pi1_sse2_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi1_sse2_with_3sets(__m128i *left1, __m128i *right1,
 													__m128i *left2, __m128i *right2,
 													__m128i *left3, __m128i *right3)
 {
@@ -238,7 +238,7 @@ static __forceinline void round_pi1_sse2_with_3sets(__m128i *left1, __m128i *rig
 	*right3 = _mm_xor_si128(*right3, *left3);
 }
 
-static __forceinline void round_pi2_sse2_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi2_sse2_with_3sets(__m128i *left1, __m128i *right1,
 													__m128i *left2, __m128i *right2,
 													__m128i *left3, __m128i *right3,
 													const __m128i *key1)
@@ -262,7 +262,7 @@ static __forceinline void round_pi2_sse2_with_3sets(__m128i *left1, __m128i *rig
 	*left3 = _mm_xor_si128(*left3, t3);
 }
 
-static __forceinline void round_pi3_sse2_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi3_sse2_with_3sets(__m128i *left1, __m128i *right1,
 													__m128i *left2, __m128i *right2,
 													__m128i *left3, __m128i *right3,
 													const __m128i *key2, const __m128i *key3)
@@ -295,7 +295,7 @@ static __forceinline void round_pi3_sse2_with_3sets(__m128i *left1, __m128i *rig
 	*right3 = _mm_xor_si128(*right3, t3);
 }
 
-static __forceinline void round_pi4_sse2_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi4_sse2_with_3sets(__m128i *left1, __m128i *right1,
 													__m128i *left2, __m128i *right2,
 													__m128i *left3, __m128i *right3,
 													const __m128i *key4)
@@ -320,7 +320,7 @@ static __forceinline void round_pi4_sse2_with_3sets(__m128i *left1, __m128i *rig
 
 #ifdef ENABLE_MULTI2_SSSE3
 
-static __forceinline __m128i byte_swap_ssse3(const __m128i *value)
+static inline __m128i byte_swap_ssse3(const __m128i *value)
 {
 	return _mm_shuffle_epi8(*value, byte_swap_mask);
 }
@@ -329,7 +329,7 @@ static __forceinline __m128i byte_swap_ssse3(const __m128i *value)
 #define round_pi2_ssse3 round_pi2_sse2
 #define round_pi4_ssse3 round_pi4_sse2
 
-static __forceinline void round_pi3_ssse3(__m128i *left, __m128i *right,
+static inline void round_pi3_ssse3(__m128i *left, __m128i *right,
 										  const __m128i *key2, const __m128i *key3)
 {
 	__m128i t;
@@ -350,7 +350,7 @@ static __forceinline void round_pi3_ssse3(__m128i *left, __m128i *right,
 #define round_pi2_ssse3_with_3sets round_pi2_sse2_with_3sets
 #define round_pi4_ssse3_with_3sets round_pi4_sse2_with_3sets
 
-static __forceinline void round_pi3_ssse3_with_3sets(__m128i *left1, __m128i *right1,
+static inline void round_pi3_ssse3_with_3sets(__m128i *left1, __m128i *right1,
 													 __m128i *left2, __m128i *right2,
 													 __m128i *left3, __m128i *right3,
 													 const __m128i *key2, const __m128i *key3)
@@ -389,34 +389,34 @@ static __forceinline void round_pi3_ssse3_with_3sets(__m128i *left1, __m128i *ri
 
 #ifdef ENABLE_MULTI2_AVX2
 
-static __forceinline __m256i byte_swap_avx2(const __m256i *value)
+static inline __m256i byte_swap_avx2(const __m256i *value)
 {
 	return _mm256_shuffle_epi8(*value, byte_swap_mask_avx2);
 }
 
-static __forceinline __m256i left_rotate_m256i(const __m256i *value, const int rotate)
+static inline __m256i left_rotate_m256i(const __m256i *value, const int rotate)
 {
 	return _mm256_or_si256(_mm256_slli_epi32(*value, rotate), _mm256_srli_epi32(*value, 32 - rotate));
 }
 
-static __forceinline __m256i shift_leftsi64_m256i(__m256i value)
+static inline __m256i shift_leftsi64_m256i(__m256i value)
 {
 	__m256i mask = _mm256_permute2x128_si256(value, value, 0x08);
 	return _mm256_alignr_epi8(value, mask, 8);
 }
 
-static __forceinline __m256i shift_rightsi192_m256i(__m256i value)
+static inline __m256i shift_rightsi192_m256i(__m256i value)
 {
 	__m256i t = _mm256_srli_si256(value, 24 - 16);
 	return _mm256_permute2x128_si256(t, t, 0x81);
 }
 
-static __forceinline void round_pi1_avx2(__m256i *left, __m256i *right)
+static inline void round_pi1_avx2(__m256i *left, __m256i *right)
 {
 	*right = _mm256_xor_si256(*right, *left);
 }
 
-static __forceinline void round_pi2_avx2(__m256i *left, __m256i *right, const __m256i *key1)
+static inline void round_pi2_avx2(__m256i *left, __m256i *right, const __m256i *key1)
 {
 	__m256i t;
 
@@ -428,7 +428,7 @@ static __forceinline void round_pi2_avx2(__m256i *left, __m256i *right, const __
 }
 
 /*
-static __forceinline void round_pi3_avx2(__m256i *left, __m256i *right, const __m256i *key2, const __m256i *key3)
+static inline void round_pi3_avx2(__m256i *left, __m256i *right, const __m256i *key2, const __m256i *key3)
 {
 	__m256i t;
 
@@ -443,7 +443,7 @@ static __forceinline void round_pi3_avx2(__m256i *left, __m256i *right, const __
 }
 */
 
-static __forceinline void round_pi3_avx2(__m256i *left, __m256i *right, const __m256i *key2, const __m256i *key3)
+static inline void round_pi3_avx2(__m256i *left, __m256i *right, const __m256i *key2, const __m256i *key3)
 {
 	__m256i t;
 
@@ -457,7 +457,7 @@ static __forceinline void round_pi3_avx2(__m256i *left, __m256i *right, const __
 	*right = _mm256_xor_si256(*right, t);
 }
 
-static __forceinline void round_pi4_avx2(__m256i *left, __m256i *right, const __m256i *key4)
+static inline void round_pi4_avx2(__m256i *left, __m256i *right, const __m256i *key4)
 {
 	__m256i t;
 
@@ -469,7 +469,7 @@ static __forceinline void round_pi4_avx2(__m256i *left, __m256i *right, const __
 
 #ifdef OPTIMIZE_MULTI2_FOR_PIPELINE
 
-static __forceinline void round_pi1_avx2_with_3sets(__m256i *left1, __m256i *right1,
+static inline void round_pi1_avx2_with_3sets(__m256i *left1, __m256i *right1,
 													__m256i *left2, __m256i *right2,
 													__m256i *left3, __m256i *right3)
 {
@@ -478,7 +478,7 @@ static __forceinline void round_pi1_avx2_with_3sets(__m256i *left1, __m256i *rig
 	*right3 = _mm256_xor_si256(*right3, *left3);
 }
 
-static __forceinline void round_pi2_avx2_with_3sets(__m256i *left1, __m256i *right1,
+static inline void round_pi2_avx2_with_3sets(__m256i *left1, __m256i *right1,
 													__m256i *left2, __m256i *right2,
 													__m256i *left3, __m256i *right3,
 													const __m256i *key1)
@@ -503,7 +503,7 @@ static __forceinline void round_pi2_avx2_with_3sets(__m256i *left1, __m256i *rig
 }
 
 /*
-static __forceinline void round_pi3_avx2_with_3sets(__m256i *left1, __m256i *right1,
+static inline void round_pi3_avx2_with_3sets(__m256i *left1, __m256i *right1,
 													__m256i *left2, __m256i *right2,
 													__m256i *left3, __m256i *right3,
 													const __m256i *key2, const __m256i *key3)
@@ -537,7 +537,7 @@ static __forceinline void round_pi3_avx2_with_3sets(__m256i *left1, __m256i *rig
 }
 */
 
-static __forceinline void round_pi3_avx2_with_3sets(__m256i *left1, __m256i *right1,
+static inline void round_pi3_avx2_with_3sets(__m256i *left1, __m256i *right1,
 													__m256i *left2, __m256i *right2,
 													__m256i *left3, __m256i *right3,
 													const __m256i *key2, const __m256i *key3)
@@ -570,7 +570,7 @@ static __forceinline void round_pi3_avx2_with_3sets(__m256i *left1, __m256i *rig
 	*right3 = _mm256_xor_si256(*right3, t3);
 }
 
-static __forceinline void round_pi4_avx2_with_3sets(__m256i *left1, __m256i *right1,
+static inline void round_pi4_avx2_with_3sets(__m256i *left1, __m256i *right1,
 													__m256i *left2, __m256i *right2,
 													__m256i *left3, __m256i *right3,
 													const __m256i *key4)
