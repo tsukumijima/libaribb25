@@ -94,7 +94,7 @@ static const uint8_t EMM_RECEIVE_CMD_HEADER[] = {
 #define B_CAS_BUFFER_MAX (4*1024)
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (interface method)
+ function prototypes (interface method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static void release_b_cas_card(void *bcas);
 static int init_b_cas_card(void *bcas);
@@ -136,7 +136,7 @@ B_CAS_CARD *create_b_cas_card(void)
 }
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (private method)
+ function prototypes (private method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static B_CAS_CARD_PRIVATE_DATA *private_data(void *bcas);
 static void teardown(B_CAS_CARD_PRIVATE_DATA *prv);

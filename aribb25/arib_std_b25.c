@@ -329,7 +329,7 @@ enum PID_MAP_TYPE {
 };
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (interface method)
+ function prototypes (interface method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static void release_arib_std_b25(void *std_b25);
 static int set_multi2_round_arib_std_b25(void *std_b25, int32_t round);
@@ -393,7 +393,7 @@ ARIB_STD_B25 *create_arib_std_b25(void)
 }
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (private method)
+ function prototypes (private method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static ARIB_STD_B25_PRIVATE_DATA *private_data(void *std_b25);
 static void teardown(ARIB_STD_B25_PRIVATE_DATA *prv);

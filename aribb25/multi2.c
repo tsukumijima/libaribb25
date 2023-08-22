@@ -66,7 +66,7 @@ typedef struct {
 #define MULTI2_STATE_SCRAMBLE_KEY_SET (0x0004)
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (interface method)
+ function prototypes (interface method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static void release_multi2(void *m2);
 static int add_ref_multi2(void *m2);
@@ -120,7 +120,7 @@ MULTI2 *create_multi2(void)
 }
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (private method)
+ function prototypes (private method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static MULTI2_PRIVATE_DATA *private_data(void *m2);
 

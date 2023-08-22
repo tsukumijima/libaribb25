@@ -40,7 +40,7 @@ typedef struct {
 #define MAX_RAW_SECTION_SIZE 4100
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (interface method)
+ function prototypes (interface method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static void release_ts_section_parser(void *parser);
 static int reset_ts_section_parser(void *parser);
@@ -89,7 +89,7 @@ TS_SECTION_PARSER *create_ts_section_parser(void)
 }
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (private method)
+ function prototypes (private method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static TS_SECTION_PARSER_PRIVATE_DATA *private_data(void *parser);
 static void teardown(TS_SECTION_PARSER_PRIVATE_DATA *prv);
