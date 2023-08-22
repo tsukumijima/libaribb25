@@ -1,4 +1,4 @@
-version: "0.2.7 build #{build}"
+version: "0.2.8 build #{build}"
 shallow_clone: true
 
 environment:
