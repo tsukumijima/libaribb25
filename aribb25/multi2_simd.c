@@ -62,7 +62,7 @@ static enum INSTRUCTION_TYPE simd_instruction = INSTRUCTION_NORMAL;
 static bool is_mask_initialized = false;
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (private method)
+ function prototypes (private method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static inline const uint32_t left_rotate_uint32_for_simd(const uint32_t value, const uint32_t rotate);
 static inline __m128i left_rotate_m128i(const __m128i *value, const int rotate);

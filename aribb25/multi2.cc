@@ -103,7 +103,7 @@ struct multi2 : public MULTI2 {
 }
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (interface method)
+ function prototypes (interface method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static void release_multi2(void *m2);
 static int add_ref_multi2(void *m2);
@@ -147,7 +147,7 @@ MULTI2 *create_multi2()
 }
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- function prottypes (private method)
+ function prototypes (private method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static multi2::multi2 *private_data(void *m2);
 
