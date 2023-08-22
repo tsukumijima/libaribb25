@@ -12,11 +12,15 @@
 #  include <tchar.h>
 #else
 #  define TCHAR char
-#  define _tcslen strlen
 #  if !defined(__CYGWIN__)
 #    include <wintypes.h>
 #  endif
+#  if defined(DEBUG)
+#    include <stdio.h>
+#  endif
 #  define _tcslen strlen
+#  define _tcscmp strcmp
+#  define _T(x) x
 #endif
 
 #if defined(_WIN32)
@@ -98,6 +102,7 @@ static const uint8_t EMM_RECEIVE_CMD_HEADER[] = {
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static void release_b_cas_card(void *bcas);
 static int init_b_cas_card(void *bcas);
+static int init_b_cas_card_with_name(void *bcas, const char * card_reader_name);
 static int get_init_status_b_cas_card(void *bcas, B_CAS_INIT_STATUS *stat);
 static int get_id_b_cas_card(void *bcas, B_CAS_ID *dst);
 static int get_pwr_on_ctrl_b_cas_card(void *bcas, B_CAS_PWR_ON_CTRL_INFO *dst);
@@ -135,6 +140,16 @@ B_CAS_CARD *create_b_cas_card(void)
 	return r;
 }
 
+static char pattern[1024] = "";
+int override_card_reader_name_pattern(const char * name) {
+    if (_tcslen(name) > 0 && _tcslen(name) < 1024) {
+        strcpy(pattern, name);
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  function prottypes (private method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -168,6 +183,49 @@ static void release_b_cas_card(void *bcas)
 }
 
 static int init_b_cas_card(void *bcas)
+{
+#if defined(_WIN32)
+    // この dll/exe と拡張子なしファイル名が同じ ini ファイルのパスを取得
+	// ini ファイルは以下のような構造
+	// [CardReader]
+	// Name=SCM Microsystems Inc. SCR33x USB Smart Card Reader 0
+	TCHAR ini_file_path[MAX_PATH];
+	GetModuleFileName((HINSTANCE)&__ImageBase, ini_file_path, MAX_PATH);
+	_tcscpy_s(_tcsrchr(ini_file_path, _T('.')), MAX_PATH, _T(".ini"));
+
+	OutputDebugString(TEXT("libaribb25: ini file path:"));
+	OutputDebugString(ini_file_path);
+
+	// card_reader_name に GetPrivateProfileString() で取得したカードリーダー名を入れる
+	// ini ファイルや値がないなどカードリーダー名を取得できなかった場合は、card_reader_name はNULLになる
+	TCHAR *card_reader_name;
+	card_reader_name = (TCHAR *)malloc(1024);
+	GetPrivateProfileString(_T("CardReader"), _T("Name"), _T(""), card_reader_name, 1024, ini_file_path);
+
+	if(card_reader_name == NULL){
+		OutputDebugString(TEXT("libaribb25: no card reader name specified in ini file."));
+	} else {
+		OutputDebugString(TEXT("libaribb25: specified card reader name:"));
+		OutputDebugString(card_reader_name);
+	}
+#endif
+    if (pattern != NULL && _tcslen(pattern) > 0 && _tcslen(pattern) < 1024) {
+        return init_b_cas_card_with_name(bcas, pattern);
+    }
+#if defined(_WIN32)
+    else if (card_reader_name != NULL && _tcslen(card_reader_name) > 0 && _tcslen(card_reader_name) < 1024) {
+        int code = init_b_cas_card_with_name(bcas, card_reader_name);
+	    free(card_reader_name);
+        return code;
+    }
+#endif
+    else {
+        return init_b_cas_card_with_name(bcas, "");
+    }
+
+}
+
+static int init_b_cas_card_with_name(void *bcas, const char * card_reader_name)
 {
 	int m;
 	long ret;
@@ -212,69 +270,47 @@ static int init_b_cas_card(void *bcas)
 		return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
 	}
 
-#if defined(_WIN32)
-	// この dll/exe と拡張子なしファイル名が同じ ini ファイルのパスを取得
-	// ini ファイルは以下のような構造
-	// [CardReader]
-	// Name=SCM Microsystems Inc. SCR33x USB Smart Card Reader 0
-	TCHAR ini_file_path[MAX_PATH];
-	GetModuleFileName((HINSTANCE)&__ImageBase, ini_file_path, MAX_PATH);
-	_tcscpy_s(_tcsrchr(ini_file_path, _T('.')), MAX_PATH, _T(".ini"));
-
-	OutputDebugString(TEXT("libaribb25: ini file path:"));
-	OutputDebugString(ini_file_path);
-
-	// card_reader_name に GetPrivateProfileString() で取得したカードリーダー名を入れる
-	// ini ファイルや値がないなどカードリーダー名を取得できなかった場合は、card_reader_name は空文字列になる
-	TCHAR *card_reader_name;
-	card_reader_name = (TCHAR *)malloc(1024);
-	GetPrivateProfileString(_T("CardReader"), _T("Name"), _T(""), card_reader_name, 1024, ini_file_path);
-	if(card_reader_name == NULL){
-		card_reader_name = _T("");
-	}
-
-	if(_tcscmp(card_reader_name, _T("")) == 0){
-		OutputDebugString(TEXT("libaribb25: no card reader name specified in ini file."));
-	} else {
-		OutputDebugString(TEXT("libaribb25: specified card reader name:"));
-		OutputDebugString(card_reader_name);
-	}
-#endif
-
 	while( prv->reader[0] != 0 ){
 
 #if defined(_WIN32)
 		OutputDebugString(TEXT("libaribb25: detected card reader name:"));
 		OutputDebugString(prv->reader);
+#elif defined(DEBUG)
+        fprintf(stderr, "libaribb25: detected card reader name:\n");
+        fprintf(stderr, "%.1024s\n", prv->reader);
+#endif
 
 		// 取得したカードリーダー名のカードリーダーなら接続を試みる
 		// もしカードリーダー名が空文字列ならすべてのカードリーダーに接続を試み、最初に見つかったカードリーダーに接続する
 		if(_tcscmp(card_reader_name, prv->reader) == 0 || _tcscmp(card_reader_name, _T("")) == 0){
 			if(connect_card(prv, prv->reader)){
+#if defined(_WIN32)
 				OutputDebugString(TEXT("libaribb25: connected card reader name:"));
 				OutputDebugString(prv->reader);
+#elif defined(DEBUG)
+                fprintf(stderr, "libaribb25: connected card reader name:\n");
+                fprintf(stderr, "%.1024s\n", prv->reader);
+#endif
 				break;
 			} else {
+#if defined(_WIN32)
 				OutputDebugString(TEXT("libaribb25: failed to connect card reader name:"));
 				OutputDebugString(prv->reader);
+#elif defined(DEBUG)
+                fprintf(stderr, "libaribb25: failed to connect card reader name:\n");
+                fprintf(stderr, "%.1024s\n", prv->reader);
+#endif
 			}
 		}
-#else
-		if(connect_card(prv, prv->reader)){
-			break;
-		}
-#endif
 
 		prv->reader += (_tcslen(prv->reader) + 1);
 	}
 
-#if defined(_WIN32)
-	free(card_reader_name);
-#endif
-
 	if(prv->card == 0){
 #if defined(_WIN32)
-		OutputDebugString(TEXT("libaribb25: no card reader connected"));
+		OutputDebugString(TEXT("libaribb25: all the attempts failed."));
+#elif defined(DEBUG)
+        fprintf(stderr, "libaribb25: all the attempts failed.\n");
 #endif
 		return B_CAS_CARD_ERROR_ALL_READERS_CONNECTION_FAILED;
 	}
