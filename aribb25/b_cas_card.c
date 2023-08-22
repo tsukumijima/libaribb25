@@ -210,20 +210,20 @@ static int init_b_cas_card(void *bcas)
 		OutputDebugString(card_reader_name);
 	}
 #endif
+    
     if (pattern != NULL && _tcslen(pattern) > 0 && _tcslen(pattern) < 1024) {
         return init_b_cas_card_with_name(bcas, pattern);
     }
 #if defined(_WIN32)
     else if (card_reader_name != NULL && _tcslen(card_reader_name) > 0 && _tcslen(card_reader_name) < 1024) {
         int code = init_b_cas_card_with_name(bcas, card_reader_name);
-	    free(card_reader_name);
+        free(card_reader_name);
         return code;
     }
 #endif
     else {
         return init_b_cas_card_with_name(bcas, "");
     }
-
 }
 
 static int init_b_cas_card_with_name(void *bcas, const char * card_reader_name)
