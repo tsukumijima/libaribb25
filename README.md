@@ -166,6 +166,9 @@ Linux 向け（＝ stz2012 版の SIMD 実装）の b1 / b25 では、オプシ�
 
 ## ビルド方法
 
+[Releases](https://github.com/tsukumijima/libaribb25/releases) ページにビルド済みアーカイブ (Windows: ZIP アーカイブ / Linux: Debian パッケージ) を用意しています。  
+ご自身でビルドを行う方は、下記の手順に従ってください。
+
 ### Windows (Visual Studio)
 
 Visual Studio 2019 で arib_std_b25.sln を開きます。
