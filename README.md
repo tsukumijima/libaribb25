@@ -195,8 +195,21 @@ sudo make install
 `sudo make install` でビルドした libaribb1 / libaribb25 をインストールします。  
 `build/` ディレクトリで `sudo make uninstall` を実行することで、インストールしたファイルをアンインストールすることができます。
 
-以下のドキュメントは、元の readme.txt を内容をそのままに Markdown 形式に書き直したものです。  
-HaijinW 版での変更内容が記載されている [MEMO.txt](https://github.com/tsukumijima/libaribb25/blob/master/MEMO.txt) もあわせて参照してください。
+-----
+
+このフォークに取り込んだ [HaijinW 版](https://github.com/HaijinW/libaribb25) での変更内容は下記の通りです (原文ママ: [出典](https://github.com/HaijinW/libaribb25/blob/feature/simd/MEMO.txt)) 。
+
+```plain
+勉強用に復号処理を SIMD 拡張命令で実装。
+既存のコードや資料などを参考に、SSE2、SSSE3、AVX2 に対応した。
+初期化時には、AVX2、SSSE3、SSE2、拡張命令なしの順で利用可能なものを選択する。
+
+ラウンド関数のあと、最後の XOR 演算はもっとよい方法があればよかったが、思いつかなかった。
+Windows環境 (x86-64) でのみ動作確認。開発環境は Visual Studio 2017 Community (15.9.7) 。
+あくまで勉強用なので、安定的な動作の保証はない。
+```
+
+以下のドキュメントは、原作者のまるも氏が書かれた元の readme.txt を、記述をそのままに Markdown 形式に書き直したものです。  
 
 ----
 
