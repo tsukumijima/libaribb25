@@ -18,8 +18,12 @@ libaribb25 には主に Windows 環境で利用されている [epgdatacapbon �
 このフォークでは、epgdatacapbon 版にさらに SIMD 対応を実装している [HaijinW 版](https://github.com/HaijinW/libaribb25) をベースに、比較的更新が活発な [stz2012 版](https://github.com/stz2012/libarib25) の変更内容を取り込みました。  
 加えて epgdatacapbon 氏が別途公開している [stz2012 版ベースのフォーク](https://github.com/epgdatacapbon/libarib25) での変更内容も取り込み、現時点で存在する有用な変更内容を大方取り込んだつもりです。
 
-2つのフォークの統合にあたり、stz2012 版由来の libarib25 という表現を libaribb25 に統一したほか、epgdatacapbon 版由来の Linux 向け Makefile を削除し、Linux でのビルド方法を CMake に統一しています。  
+2つのフォークの統合にあたり、stz2012 版由来の `libarib25` という表現を `libaribb25` に統一したほか、epgdatacapbon 版由来の Linux 向け Makefile を削除し、Linux でのビルド方法を CMake に統一しています。  
 Windows 向けライブラリのビルドは Visual Studio で、Linux 向けライブラリのビルドは CMake で行えます。
+
+> **Note**  
+> 0.2.9 以降では、[stz2012/recpt1](https://github.com/stz2012/recpt1) など `libarib25` というライブラリ名に依存しているソフトウェアとの互換性を保つため、インストール時に `libaribb25` から `libarib25` へのシンボリックリンクを作成するようになりました！  
+> 今までは `find . -type f | xargs sed -i "s/arib25/aribb25/g"` `find . -type f | xargs sed -i "s/ARIB25/ARIBB25/g"` のようにソースコードを置換してからビルドしていましたが、この変更により置換作業が不要になります。
 
 ### スカパー！プレミアムサービス対応の統合
 
@@ -50,6 +54,7 @@ b25（実行ファイル）に渡す `src.m2t` `dst.m2t` の各引数をそれ�
 Mirakurun で受信した放送波のスクランブルを解除するための decoder として多く利用されていますが、実は 5 年以上前のかなり古い stz2012 版の libarib25 がベースとなっています。  
 そのため、最新の stz2012 版などでは修正されている不具合が未修正のままになっているなど、いくつかの問題を抱えています。
 
+> **Note**  
 > もっともほとんどのケースで問題なく動作するため、影響はさほど大きくないと思われます。
 
 [arib-b25-stream-test_for_win](https://github.com/daig0rian/arib-b25-stream-test_for_win) のコードを参考に、Linux 対応を追加して現行のコードに手作業で統合しました。  
@@ -66,8 +71,10 @@ Linux (CMake) でビルドした場合はビルド対象になりません。そ
 
 B25Decoder 互換のインターフェイスが実装されているのは libaribb25.cpp / libaribb25.h です。  
 B25Decoder.cpp / B25Decoder.h が一見それのように見えますが、実はプロジェクト上では使用されておらず、ビルド対象にも入っていないコードです。  
+
+> **Note**  
 > そもそも関数名が UpperCamelCase から snake_case に変更されていることからして、本来の B25Decoder インターフェイスとの互換性はありません。  
-おそらく Linux で B25Decoder のようなインターフェイスを実装した libaribb25 のラッパーとしてのコードだと思われますが、このコードが含まれていた epgdatacapbon 版でも現在は使われておらず、どのような意図で利用されていたコードなのかは不明です。本来削除しても問題はないのですが、念のため残しています。
+> おそらく Linux で B25Decoder のようなインターフェイスを実装した libaribb25 のラッパーとしてのコードだと思われますが、このコードが含まれていた epgdatacapbon 版でも現在は使われておらず、どのような意図で利用されていたコードなのかは不明です。本来削除しても問題はないのですが、念のため残しています。
 
 ### ini ファイルでカードリーダー名を指定してスクランブル解除を行う機能の追加 (Windows のみ)
 
@@ -132,6 +139,7 @@ FFF9FFFF=B25Decoder-CATV.dll
 最後に、EDCB の BonCtrl.ini の [SET] 以下の記述を、上記の通りに変更して保存します。  
 これで B-CAS カードと C-CAS カードを同じ PC に接続した状態で、地上波と CATV (C-CAS が必要なトランスモジュレーション方式 (ISDB-C) チャンネル) を両方受信できるようになるはずです！
 
+> **Note**  
 > BonCtrl.ini に追記した行の先頭の `FFFE`,`FFFA`,`FFFD`,`FFF9` はいずれも CATV チャンネルの network_id を示しています。  
 > その次の FFFF は、同じ network_id のすべてのチャンネルに対して同じデコーダーを利用することを示しています。
 
