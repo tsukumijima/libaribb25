@@ -1,9 +1,9 @@
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
-libdir=${exec_prefix}/lib
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
 includedir=${prefix}/include
 
-Name: @CMAKE_LIBRARY_PREFIX@@ARIBB1_LIB_NAME@
+Name: @CMAKE_SHARED_LIBRARY_PREFIX@@ARIBB1_LIB_NAME@
 Description: @ARIBB1_DESCRIPTION@
 URL: @ARIBB1_URL@
 Version: @ARIBB1_VERSION_STRING@
