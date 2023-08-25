@@ -48,11 +48,9 @@ jobs:
         run: sudo apt-get install -y build-essential cmake cmake-data libpcsclite-dev pkg-config
       - name: build
         run: |
-          cmake -B build
+          cmake -B build -DUSE_AVX2=on -DCMAKE_INSTALL_PREFIX=/usr
           cd build
-          make
-          sudo make install
-          sudo cpack -G DEB -P libaribb25 -C CPackConfig.cmake
+          sudo make package
       - name: get output name
         id: get_output_name
         run: |
@@ -87,10 +85,8 @@ jobs:
 
       - name: build
         run: |
-          mkdir build
-          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c 'cmake --version && cmake ..'
-          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c \
-            'cpack -G DEB -P libaribb25 -C CPackConfig.cmake'
+          docker run --rm -i -v $(pwd):/work -w /work -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c \
+            'cmake -B build -DCMAKE_INSTALL_PREFIX=/usr && cd build && make package'
       - name: get output name
         id: get_output_name
         run: |

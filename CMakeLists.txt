@@ -36,32 +36,6 @@ if(NOT WIN32)
 	option(USE_NEON "enable NEON" OFF)
 endif()
 
-if(UNIX AND NOT CYGWIN)
-	# アーキテクチャ情報を取得
-	set(ARCH ${CMAKE_SYSTEM_PROCESSOR})
-
-	# アーキテクチャに応じたGNUトリプレットを生成
-	if(ARCH STREQUAL "x86_64")
-		set(ARCH_TRIPLET "x86_64-linux-gnu")
-	elseif(ARCH STREQUAL "aarch64")
-		set(ARCH_TRIPLET "aarch64-linux-gnu")
-	else()
-		message(WARNING "Unknown architecture: ${ARCH}. Defaulting to x86_64.")
-		set(ARCH_TRIPLET "x86_64-linux-gnu")
-	endif()
-
-	# インストール先のディレクトリを指定
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "default install path" FORCE)
-	endif()
-
-	if(CMAKE_INSTALL_PREFIX STREQUAL "/usr")
-		set(CMAKE_INSTALL_LIBDIR "lib/${ARCH_TRIPLET}")
-	else()
-		set(CMAKE_INSTALL_LIBDIR "lib")
-	endif()
-endif()
-
 # ---------- set variable (libaribb1) ----------
 
 set(ARIBB1_LIB_NAME "aribb1")
@@ -110,7 +84,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "(GNU|Clang)")
 	set(CMAKE_SHARED_LINKER_FLAGS "-fvisibility=hidden")
 
 	if(UNIX AND NOT CYGWIN)
-		include(LinuxPackage)
 		include(ElfInterp)
 		set(CMAKE_C_FLAGS   "-fPIC ${CMAKE_C_FLAGS}")
 		set(CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
@@ -127,7 +100,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "(GNU|Clang)")
 	endif()
 
 	if(USE_AVX2)
-#		add_definitions("-DENABLE_MULTI2_SIMD")
 		set(CMAKE_C_FLAGS   "-mavx2 ${CMAKE_C_FLAGS}")
 		set(CMAKE_CXX_FLAGS "-mavx2 ${CMAKE_CXX_FLAGS}")
 	endif()
@@ -298,4 +270,22 @@ elseif(WIN32)
 
 	add_custom_target(uninstall ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Uninstall.cmake)
 
+endif()
+
+# ---------- CPack ----------
+
+# CPack を使用して Debian パッケージをビルドする際は、常に `cmake -B build -DCMAKE_INSTALL_PREFIX=/usr` と実行しなければならない
+# CMAKE_INSTALL_PREFIX はデフォルトで /usr/local に設定されているが、何らかの理由でライブラリを /usr/lib に配置する Debian パッケージが生成されてしまう
+# この結果、pkg-config 設定ファイルの記述内容と齟齬が発生し、外部ソフトウェアがライブラリを正しくリンクできなくなる
+
+if(UNIX AND NOT CYGWIN AND NOT APPLE)
+	set(CPACK_GENERATOR "DEB")
+	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "ARIB STD-B1 / ARIB STD-B25 library")
+	set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+	set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+	set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")  # ref: https://stackoverflow.com/a/59202791/17124142
+	set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpcsclite (>= 1.8.3)")
+	SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "tsukumi <tsukumijima@users.noreply.github.com>")
+	set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+	include(CPack)
 endif()
