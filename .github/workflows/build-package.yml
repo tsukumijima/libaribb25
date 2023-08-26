@@ -3,12 +3,8 @@ on: push
 
 jobs:
   windows:
-    name: Windows
-    strategy:
-      matrix:
-        os:
-          - windows-2019
-    runs-on: ${{ matrix.os }}
+    name: Windows Package
+    runs-on: windows-2019
     steps:
       - name: setup msbuild
         uses: microsoft/setup-msbuild@v1.1
@@ -41,6 +37,7 @@ jobs:
           path: ${{ steps.get_output_name.outputs.archive_path }}
 
   deb-package:
+    name: Debian Package
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
@@ -63,29 +60,24 @@ jobs:
           path: ${{ steps.get_output_name.outputs.deb_path }}
 
   deb-package-arm:
-    strategy:
-      matrix:
-        image:
-          - arm64v8/ubuntu
+    name: Debian Package (ARM)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-qemu-action@v2
       - uses: docker/setup-buildx-action@v2
-
       - name: setup
         uses: docker/build-push-action@v3
         with:
           context: .github/workflows/
-          tags: ${{ matrix.image }}:build
-          build-args: IMAGE=${{ matrix.image }}:20.04
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+          tags: arm64v8/ubuntu:build
+          build-args: IMAGE=arm64v8/ubuntu:20.04
+          cache-from: type=gha,scope=arm64v8/ubuntu
+          cache-to: type=gha,scope=arm64v8/ubuntu,mode=max
           load: true
-
       - name: build
         run: |
-          docker run --rm -i -v $(pwd):/work -w /work -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c \
+          docker run --rm -i -v $(pwd):/work -w /work -e CLICOLOR_FORCE=1 arm64v8/ubuntu:build bash -c \
             'cmake -B build -DCMAKE_INSTALL_PREFIX=/usr && cd build && make package'
       - name: get output name
         id: get_output_name
