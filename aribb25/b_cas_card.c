@@ -187,30 +187,30 @@ static int init_b_cas_card(void *bcas)
 {
 #if defined(_WIN32)
     // この dll/exe と拡張子なしファイル名が同じ ini ファイルのパスを取得
-	// ini ファイルは以下のような構造
-	// [CardReader]
-	// Name=SCM Microsystems Inc. SCR33x USB Smart Card Reader 0
-	TCHAR ini_file_path[MAX_PATH];
-	GetModuleFileName((HINSTANCE)&__ImageBase, ini_file_path, MAX_PATH);
-	_tcscpy_s(_tcsrchr(ini_file_path, _T('.')), MAX_PATH, _T(".ini"));
+    // ini ファイルは以下のような構造
+    // [CardReader]
+    // Name=SCM Microsystems Inc. SCR33x USB Smart Card Reader 0
+    TCHAR ini_file_path[MAX_PATH];
+    GetModuleFileName((HINSTANCE)&__ImageBase, ini_file_path, MAX_PATH);
+    _tcscpy_s(_tcsrchr(ini_file_path, _T('.')), MAX_PATH, _T(".ini"));
 
-	OutputDebugString(TEXT("libaribb25: ini file path:"));
-	OutputDebugString(ini_file_path);
+    OutputDebugString(TEXT("libaribb25: ini file path:"));
+    OutputDebugString(ini_file_path);
 
-	// card_reader_name に GetPrivateProfileString() で取得したカードリーダー名を入れる
-	// ini ファイルや値がないなどカードリーダー名を取得できなかった場合は、card_reader_name はNULLになる
-	TCHAR *card_reader_name;
-	card_reader_name = (TCHAR *)malloc(1024);
-	GetPrivateProfileString(_T("CardReader"), _T("Name"), _T(""), card_reader_name, 1024, ini_file_path);
+    // card_reader_name に GetPrivateProfileString() で取得したカードリーダー名を入れる
+    // ini ファイルや値がないなどカードリーダー名を取得できなかった場合は、card_reader_name はNULLになる
+    TCHAR *card_reader_name;
+    card_reader_name = (TCHAR *)malloc(1024);
+    GetPrivateProfileString(_T("CardReader"), _T("Name"), _T(""), card_reader_name, 1024, ini_file_path);
 
-	if(card_reader_name == NULL){
-		OutputDebugString(TEXT("libaribb25: no card reader name specified in ini file."));
-	} else {
-		OutputDebugString(TEXT("libaribb25: specified card reader name:"));
-		OutputDebugString(card_reader_name);
-	}
+    if(card_reader_name == NULL){
+        OutputDebugString(TEXT("libaribb25: no card reader name specified in ini file."));
+    } else {
+        OutputDebugString(TEXT("libaribb25: specified card reader name:"));
+        OutputDebugString(card_reader_name);
+    }
 #endif
-    
+
     if (pattern != NULL && _tcslen(pattern) > 0 && _tcslen(pattern) < 1024) {
         return init_b_cas_card_with_name(bcas, pattern);
     }
@@ -228,95 +228,95 @@ static int init_b_cas_card(void *bcas)
 
 static int init_b_cas_card_with_name(void *bcas, const char * card_reader_name)
 {
-	int m;
-	long ret;
-	unsigned long len;
+    int m;
+    long ret;
+    unsigned long len;
 
-	B_CAS_CARD_PRIVATE_DATA *prv;
+    B_CAS_CARD_PRIVATE_DATA *prv;
 
-	prv = private_data(bcas);
-	if(prv == NULL){
-		return B_CAS_CARD_ERROR_INVALID_PARAMETER;
-	}
+    prv = private_data(bcas);
+    if(prv == NULL){
+        return B_CAS_CARD_ERROR_INVALID_PARAMETER;
+    }
 
-	teardown(prv);
+    teardown(prv);
 
-	ret = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &(prv->mng));
-	if(ret != SCARD_S_SUCCESS){
-		return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
-	}
+    ret = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &(prv->mng));
+    if(ret != SCARD_S_SUCCESS){
+        return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
+    }
 
-	ret = SCardListReaders(prv->mng, NULL, NULL, &len);
-	if(ret != SCARD_S_SUCCESS){
-		return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
-	}
-	len += 256;
+    ret = SCardListReaders(prv->mng, NULL, NULL, &len);
+    if(ret != SCARD_S_SUCCESS){
+        return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
+    }
+    len += 256;
 
-	m = (sizeof(TCHAR)*len) + (2*B_CAS_BUFFER_MAX) + (sizeof(int64_t)*16) + (sizeof(B_CAS_PWR_ON_CTRL)*16);
-	prv->pool = (uint8_t *)malloc(m);
-	if(prv->pool == NULL){
-		return B_CAS_CARD_ERROR_NO_ENOUGH_MEMORY;
-	}
+    m = (sizeof(TCHAR)*len) + (2*B_CAS_BUFFER_MAX) + (sizeof(int64_t)*16) + (sizeof(B_CAS_PWR_ON_CTRL)*16);
+    prv->pool = (uint8_t *)malloc(m);
+    if(prv->pool == NULL){
+        return B_CAS_CARD_ERROR_NO_ENOUGH_MEMORY;
+    }
 
-	prv->reader = (LPTSTR)(prv->pool);
-	prv->sbuf = prv->pool + len;
-	prv->rbuf = prv->sbuf + B_CAS_BUFFER_MAX;
-	prv->id.data = (int64_t *)(prv->rbuf + B_CAS_BUFFER_MAX);
-	prv->id_max = 16;
-	prv->pwc.data = (B_CAS_PWR_ON_CTRL *)(prv->id.data + prv->id_max);
-	prv->pwc_max = 16;
+    prv->reader = (LPTSTR)(prv->pool);
+    prv->sbuf = prv->pool + len;
+    prv->rbuf = prv->sbuf + B_CAS_BUFFER_MAX;
+    prv->id.data = (int64_t *)(prv->rbuf + B_CAS_BUFFER_MAX);
+    prv->id_max = 16;
+    prv->pwc.data = (B_CAS_PWR_ON_CTRL *)(prv->id.data + prv->id_max);
+    prv->pwc_max = 16;
 
-	ret = SCardListReaders(prv->mng, NULL, prv->reader, &len);
-	if(ret != SCARD_S_SUCCESS){
-		return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
-	}
+    ret = SCardListReaders(prv->mng, NULL, prv->reader, &len);
+    if(ret != SCARD_S_SUCCESS){
+        return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
+    }
 
-	while( prv->reader[0] != 0 ){
+    while( prv->reader[0] != 0 ){
 
 #if defined(_WIN32)
-		OutputDebugString(TEXT("libaribb25: detected card reader name:"));
-		OutputDebugString(prv->reader);
+        OutputDebugString(TEXT("libaribb25: detected card reader name:"));
+        OutputDebugString(prv->reader);
 #elif defined(DEBUG)
         fprintf(stderr, "libaribb25: detected card reader name:\n");
         fprintf(stderr, "%.1024s\n", prv->reader);
 #endif
 
-		// 取得したカードリーダー名のカードリーダーなら接続を試みる
-		// もしカードリーダー名が空文字列ならすべてのカードリーダーに接続を試み、最初に見つかったカードリーダーに接続する
-		if(_tcscmp(card_reader_name, prv->reader) == 0 || _tcscmp(card_reader_name, _T("")) == 0){
-			if(connect_card(prv, prv->reader)){
+        // 取得したカードリーダー名のカードリーダーなら接続を試みる
+        // もしカードリーダー名が空文字列ならすべてのカードリーダーに接続を試み、最初に見つかったカードリーダーに接続する
+        if(_tcscmp(card_reader_name, prv->reader) == 0 || _tcscmp(card_reader_name, _T("")) == 0){
+            if(connect_card(prv, prv->reader)){
 #if defined(_WIN32)
-				OutputDebugString(TEXT("libaribb25: connected card reader name:"));
-				OutputDebugString(prv->reader);
+                OutputDebugString(TEXT("libaribb25: connected card reader name:"));
+                OutputDebugString(prv->reader);
 #elif defined(DEBUG)
                 fprintf(stderr, "libaribb25: connected card reader name:\n");
                 fprintf(stderr, "%.1024s\n", prv->reader);
 #endif
-				break;
-			} else {
+                break;
+            } else {
 #if defined(_WIN32)
-				OutputDebugString(TEXT("libaribb25: failed to connect card reader name:"));
-				OutputDebugString(prv->reader);
+                OutputDebugString(TEXT("libaribb25: failed to connect card reader name:"));
+                OutputDebugString(prv->reader);
 #elif defined(DEBUG)
                 fprintf(stderr, "libaribb25: failed to connect card reader name:\n");
                 fprintf(stderr, "%.1024s\n", prv->reader);
 #endif
-			}
-		}
+            }
+        }
 
-		prv->reader += (_tcslen(prv->reader) + 1);
-	}
+        prv->reader += (_tcslen(prv->reader) + 1);
+    }
 
-	if(prv->card == 0){
+    if(prv->card == 0){
 #if defined(_WIN32)
-		OutputDebugString(TEXT("libaribb25: all the attempts failed."));
+        OutputDebugString(TEXT("libaribb25: all the attempts failed."));
 #elif defined(DEBUG)
         fprintf(stderr, "libaribb25: all the attempts failed.\n");
 #endif
-		return B_CAS_CARD_ERROR_ALL_READERS_CONNECTION_FAILED;
-	}
+        return B_CAS_CARD_ERROR_ALL_READERS_CONNECTION_FAILED;
+    }
 
-	return 0;
+    return 0;
 }
 
 static int get_init_status_b_cas_card(void *bcas, B_CAS_INIT_STATUS *stat)
