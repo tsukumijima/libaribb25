@@ -242,7 +242,7 @@ if(UNIX AND NOT CYGWIN)
 	install(TARGETS arib-b1-stream-test RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb1-static aribb1-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 	install(DIRECTORY DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
-	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
+	install(FILES aribb25/arib_std_b25_error_code.h aribb25/arib_std_b25.h aribb25/b_cas_card_error_code.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/portable.h aribb25/simd_instruction_type.h aribb25/ts_common_types.h aribb25/ts_section_parser_error_code.h aribb25/ts_section_parser.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB1_LIB_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/symlink-${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB1_LIB_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR} RENAME ${CMAKE_SHARED_LIBRARY_PREFIX}arib1${CMAKE_SHARED_LIBRARY_SUFFIX})
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/symlink-${ARIBB1_LIB_NAME} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} RENAME arib1)
@@ -260,7 +260,7 @@ if(UNIX AND NOT CYGWIN)
 	install(TARGETS arib-b25-stream-test RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb25-static aribb25-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 	install(DIRECTORY DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
-	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
+	install(FILES aribb25/arib_std_b25_error_code.h aribb25/arib_std_b25.h aribb25/b_cas_card_error_code.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/portable.h aribb25/simd_instruction_type.h aribb25/ts_common_types.h aribb25/ts_section_parser_error_code.h aribb25/ts_section_parser.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/symlink-${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR} RENAME ${CMAKE_SHARED_LIBRARY_PREFIX}arib25${CMAKE_SHARED_LIBRARY_SUFFIX})
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/symlink-${ARIBB25_LIB_NAME} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} RENAME arib25)
@@ -276,13 +276,13 @@ elseif(WIN32)
 
 	install(TARGETS b1 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb1-static aribb1-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR})
-	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
+	install(FILES aribb25/arib_std_b25_error_code.h aribb25/arib_std_b25.h aribb25/b_cas_card_error_code.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/portable.h aribb25/simd_instruction_type.h aribb25/ts_common_types.h aribb25/ts_section_parser_error_code.h aribb25/ts_section_parser.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
 
 	# ---------- libaribb25 ----------
 
 	install(TARGETS b25 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb25-static aribb25-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR})
-	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
+	install(FILES aribb25/arib_std_b25_error_code.h aribb25/arib_std_b25.h aribb25/b_cas_card_error_code.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/portable.h aribb25/simd_instruction_type.h aribb25/ts_common_types.h aribb25/ts_section_parser_error_code.h aribb25/ts_section_parser.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
 
 	add_custom_target(uninstall ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Uninstall.cmake)
 
