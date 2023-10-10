@@ -187,6 +187,7 @@ static int init_b_cas_card(void *bcas)
 		return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
 	}
 
+	len = 0;
 	ret = SCardListReaders(prv->mng, NULL, NULL, &len);
 	if(ret != SCARD_S_SUCCESS){
 		return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
@@ -227,7 +228,7 @@ static int init_b_cas_card(void *bcas)
 	// card_reader_name に GetPrivateProfileString() で取得したカードリーダー名を入れる
 	// ini ファイルや値がないなどカードリーダー名を取得できなかった場合は、card_reader_name は空文字列になる
 	TCHAR *card_reader_name;
-	card_reader_name = (TCHAR *)malloc(1024);
+	card_reader_name = (TCHAR *)malloc(1024 * sizeof(TCHAR));
 	GetPrivateProfileString(_T("CardReader"), _T("Name"), _T(""), card_reader_name, 1024, ini_file_path);
 	if(card_reader_name == NULL){
 		card_reader_name = _T("");
@@ -255,6 +256,7 @@ static int init_b_cas_card(void *bcas)
 				OutputDebugString(prv->reader);
 				break;
 			} else {
+
 				OutputDebugString(TEXT("libaribb25: failed to connect card reader name:"));
 				OutputDebugString(prv->reader);
 			}

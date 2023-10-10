@@ -344,7 +344,7 @@ static int flush_arib_std_b25(void *std_b25);
 static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf);
 static int get_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf);
 static int get_program_count_arib_std_b25(void *std_b25);
-static int get_program_info_arib_std_b25(void *std_b25, ARIB_STD_B25_PROGRAM_INFO *info, int idx);
+static int get_program_info_arib_std_b25(void *std_b25, ARIB_STD_B25_PROGRAM_INFO *info, int32_t idx);
 static int withdraw_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -621,8 +621,8 @@ static int flush_arib_std_b25(void *std_b25)
 	curr = prv->sbuf.head;
 	tail = prv->sbuf.tail;
 
-	m = prv->dbuf.tail - prv->dbuf.head;
-	n = tail - curr;
+	m = (int)(prv->dbuf.tail - prv->dbuf.head);
+	n = (int)(tail - curr);
 	if(!reserve_work_buffer(&(prv->dbuf), m+n)){
 		return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 	}
@@ -670,7 +670,7 @@ static int flush_arib_std_b25(void *std_b25)
 		p = curr+4;
 		if(hdr.adaptation_field_control & 0x02){
 			p += (p[0]+1);
-			n = 188 - (p-curr);
+			n = 188 - (int)(p-curr);
 			if( (n < 1) && ((n < 0) || (hdr.adaptation_field_control & 0x01)) ){
 				/* broken packet */
 				curr += 1;
@@ -967,8 +967,8 @@ static int flush_arib_std_b25(void *std_b25)
 
 LAST:
 
-	m = curr - prv->sbuf.pool;
-	n = tail - curr;
+	m = (int)(curr - prv->sbuf.pool);
+	n = (int)(tail - curr);
 	if( (n < 1024) || (m > (prv->sbuf.max/2) ) ){
 		p = prv->sbuf.pool;
 		if(n > 0){
@@ -1160,7 +1160,7 @@ static int withdraw_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 	}
 
 	buf->data = prv->sbuf.head;
-	buf->size = prv->sbuf.tail - prv->sbuf.head;
+	buf->size = (uint32_t)(prv->sbuf.tail - prv->sbuf.head);
 
 	reset_work_buffer(&(prv->sbuf));
 
@@ -2145,6 +2145,7 @@ LAST:
 			r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
 		}
 	}
+	return r;
 }
 
 #if defined(DEBUG)
@@ -2867,14 +2868,14 @@ static int reserve_work_buffer(TS_WORK_BUFFER *buf, intptr_t size)
 		n = buf->max * 2;
 	}
 
-	while(n < size){
+	while(n <size){
 		n += n;
 	}
 
 #ifdef ENABLE_MULTI2_SIMD
-	p = (uint8_t *)mem_aligned_alloc(n);
+	p = (uint8_t *)mem_aligned_alloc(n * sizeof(uint8_t));
 #else
-	p = (uint8_t *)malloc(n);
+	p = (uint8_t *)malloc(n * sizeof(uint8_t));
 #endif
 	if(p == NULL){
 		return 0;

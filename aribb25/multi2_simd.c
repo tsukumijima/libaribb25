@@ -950,7 +950,7 @@ void decrypt_multi2_without_simd(uint8_t * __restrict data, const uint32_t size,
 			round_pi4(&cbc_left, &cbc_right, work_key->key8);
 		}
 
-		uint8_t remain[8];
+		uint8_t remain[8] = {0};
 		*(uint32_t*)(remain + 0) = cbc_left;
 		*(uint32_t*)(remain + 4) = cbc_right;
 		switch (remain_size) {
@@ -1240,7 +1240,7 @@ void decrypt_multi2_with_sse2(uint8_t * __restrict data, const uint32_t size,
 			round_pi4(&cbc_left, &cbc_right, work_key->key8);
 		}
 
-		ALIGNAS(16) uint8_t remain[8];
+		ALIGNAS(16) uint8_t remain[8] = { 0 };
 		*(uint32_t*)(remain + 0) = cbc_left;
 		*(uint32_t*)(remain + 4) = cbc_right;
 		switch (remain_size) {
@@ -1516,7 +1516,7 @@ void decrypt_multi2_with_ssse3(uint8_t * __restrict data, const uint32_t size,
 			round_pi4(&cbc_left, &cbc_right, work_key->key8);
 		}
 
-		ALIGNAS(16) uint8_t remain[8];
+		ALIGNAS(16) uint8_t remain[8] = { 0 };
 		*(uint32_t*)(remain + 0) = cbc_left;
 		*(uint32_t*)(remain + 4) = cbc_right;
 		switch (remain_size) {
@@ -1850,7 +1850,7 @@ void decrypt_multi2_with_avx2(uint8_t * __restrict data, const uint32_t size,
 			round_pi4(&cbc_left, &cbc_right, work_key->key8);
 		}
 
-		ALIGNAS(32) uint8_t remain[8];
+		ALIGNAS(32) uint8_t remain[8] = { 0 };
 		*(uint32_t*)(remain + 0) = cbc_left;
 		*(uint32_t*)(remain + 4) = cbc_right;
 		switch (remain_size) {

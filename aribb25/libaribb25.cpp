@@ -1,4 +1,4 @@
-﻿// libaribb25.cpp: CB25Decoder クラスのインプリメンテーション
+// libaribb25.cpp: CB25Decoder クラスのインプリメンテーション
 //
 //////////////////////////////////////////////////////////////////////
 #include "libaribb25.h"
@@ -44,7 +44,7 @@ __declspec(dllexport) IB25Decoder2 * CreateB25Decoder2()
 // 静的メンバ初期化
 CB25Decoder * CB25Decoder::m_pThis = nullptr;
 
-CB25Decoder::CB25Decoder(void) : _bcas(nullptr), _b25(nullptr), _data(nullptr)
+CB25Decoder::CB25Decoder(void) : _bcas(nullptr), _b25(nullptr), _data(nullptr), _errtime(0)
 {
 	m_pThis = this;
 }
@@ -166,7 +166,7 @@ const BOOL CB25Decoder::Decode(BYTE *pSrcBuf, const DWORD dwSrcSize, BYTE **ppDs
 			BYTE *p = nullptr;
 			_b25->withdraw(_b25, &buf);	// withdraw src buffer
 			if (buf.size > 0)
-				p = (BYTE *)::malloc(buf.size + dwSrcSize);
+				p = (BYTE *)::malloc((DWORD)buf.size + dwSrcSize);
 
 			if (p) {
 				::memcpy(p, buf.data, buf.size);

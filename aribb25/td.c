@@ -252,7 +252,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 #endif
 	int32_t offset;
 #if defined(_WIN32)
-	unsigned long tick,tock;
+	unsigned long long tick,tock;
 #else
 	struct timeval tick,tock;
 	double millisec;
@@ -264,7 +264,8 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 
 	ARIB_STD_B25_PROGRAM_INFO pgrm;
 
-	uint8_t data[64*1024];
+	const int data_size= 64 * 1024;
+	uint8_t *data;
 	uint8_t *_data;
 
 	ARIB_STD_B25_BUFFER sbuf;
@@ -281,13 +282,33 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	bcas = NULL;
 	_data = NULL;
 
+	if ((data = (uint8_t*)malloc(data_size * sizeof(uint8_t))) == NULL)
+	{
+		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::test_arib_std_b25 malloc()\n"));
+		goto LAST;
+	}
+
 #ifdef ENABLE_ARIB_STREAM_TEST
 #if defined(_WIN32)
-	_setmode(_fileno(stdin), _O_BINARY);
-	_setmode(_fileno(stdout), _O_BINARY);
+	if (_setmode(_fileno(stdin), _O_BINARY) == -1)
+	{
+		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::test_arib_std_b25 set stdin mode\n"));
+		goto LAST;
+	}
+	if (_setmode(_fileno(stdout), _O_BINARY) == -1)
+	{
+		_ftprintf(stderr, _T("error - failed on ARIB_STD_B25::test_arib_std_b25 set stdout mode\n"));
+		goto LAST;
+	}
+
 #endif
 #else
-	sfd = _topen(src, _O_BINARY|_O_RDONLY|_O_SEQUENTIAL);
+#if defined(_WIN32)
+	_tsopen_s(&sfd, src, _O_BINARY | _O_RDONLY | _O_SEQUENTIAL, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+#else
+	sfd = _topen(src, _O_BINARY | _O_RDONLY | _O_SEQUENTIAL);
+#endif
+
 	if(sfd < 0){
 		_ftprintf(stderr, _T("error - failed on _open(%s) [src]\n"), src);
 		goto LAST;
@@ -349,7 +370,11 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	}
 
 #ifndef ENABLE_ARIB_STREAM_TEST
-	dfd = _topen(dst, _O_BINARY|_O_WRONLY|_O_SEQUENTIAL|_O_CREAT|_O_TRUNC, _S_IREAD|_S_IWRITE);
+#if defined(_WIN32)
+	_tsopen_s(&dfd, dst, _O_BINARY | _O_WRONLY | _O_SEQUENTIAL | _O_CREAT | _O_TRUNC, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+#else
+	dfd = _topen(dst, _O_BINARY | _O_WRONLY | _O_SEQUENTIAL | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
+#endif
 	if(dfd < 0){
 		_ftprintf(stderr, _T("error - failed on _open(%s) [dst]\n"), dst);
 		goto LAST;
@@ -358,11 +383,11 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 
 	offset = 0;
 #if defined(_WIN32)
-	tock = GetTickCount();
+	tock = GetTickCount64();
 #else
 	gettimeofday(&tock, NULL);
 #endif
-	while( (n = _read(sfd, data, sizeof(data))) > 0 ){
+	while( (n = _read(sfd, data, data_size)) > 0 ){
 		sbuf.data = data;
 		sbuf.size = n;
 
@@ -379,7 +404,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 						free(_data);
 						_data = NULL;
 					}
-					p = (uint8_t *)malloc(sbuf.size + n);
+					p = (uint8_t *)malloc((size_t)(sbuf.size + n) * sizeof(uint8_t));
 				}
 				if(p != NULL){
 					memcpy(p, sbuf.data, sbuf.size);
@@ -412,7 +437,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 #endif
 			mbps = 0.0;
 #if defined(_WIN32)
-			tick = GetTickCount();
+			tick = GetTickCount64();
 			if (tick-tock > 100) {
 				mbps = offset;
 				mbps /= 1024;
@@ -459,7 +484,7 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	if(opt->verbose != 0){
 		mbps = 0.0;
 #if defined(_WIN32)
-		tick = GetTickCount();
+		tick = GetTickCount64();
 		if(tick-tock > 100){
 			mbps = offset;
 			mbps /= 1024;
@@ -496,8 +521,8 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 			_ftprintf(stderr, _T("  channel:               %d\n"), pgrm.program_number);
 			_ftprintf(stderr, _T("  unpurchased ECM count: %d\n"), pgrm.ecm_unpurchased_count);
 			_ftprintf(stderr, _T("  last ECM error code:   %04x\n"), pgrm.last_ecm_error_code);
-			_ftprintf(stderr, _T("  undecrypted TS packet: %" PRId64 "\n"), pgrm.undecrypted_packet_count);
-			_ftprintf(stderr, _T("  total TS packet:       %" PRId64 "\n"), pgrm.total_packet_count);
+			_ftprintf(stderr, _T("  undecrypted TS packet: %")_T(PRId64)_T("\n"), pgrm.undecrypted_packet_count);
+			_ftprintf(stderr, _T("  total TS packet:       %")_T(PRId64)_T("\n"), pgrm.total_packet_count);
 		}
 	}
 
@@ -506,6 +531,12 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	}
 
 LAST:
+
+	if (data == NULL)
+	{
+		free(data);
+		data = NULL;
+	}
 
 	if(_data != NULL){
 		free(_data);
@@ -631,7 +662,7 @@ static void run_multi2_benchmark_test(OPTION *opt)
 	_ftprintf(stderr, _T("complete - MULTI2 benchmark test (count=%u)\n"), test_count);
 	base_time = totals[0];
 	for(int32_t i=0;i<MAX_INSTRUCTION;i++){
-		_ftprintf(stderr, _T("  %-6s: %5" PRId64 " ms [%8d packets/s]"), INSTRUCTION_NAMES[i], totals[i], (int32_t)round(test_count*1000LL/(double)totals[i]));
+		_ftprintf(stderr, _T("  %-6s: %5")_T(PRId64)_T(" ms [%8d packets/s]"), INSTRUCTION_NAMES[i], totals[i], (int32_t)round(test_count * 1000LL / (double)totals[i]));
 		if(i == 0){
 			_ftprintf(stderr, _T("\n"));
 			continue;

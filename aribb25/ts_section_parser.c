@@ -438,7 +438,7 @@ static void append_section_data(TS_SECTION *sect, uint8_t *data, intptr_t size)
 		return;
 	}
 
-	n = sect->hdr.section_length + 3;
+	n = (intptr_t)sect->hdr.section_length + 3;
 	if(m > n){
 		sect->tail = sect->raw + n;
 	}
