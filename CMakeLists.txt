@@ -14,7 +14,7 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING "default build type")
 
 set(CMAKE_INSTALL_SO_NO_EXE False)
 
-project(libaribb25 VERSION 0.2.8 LANGUAGES C CXX)
+project(libaribb25 VERSION 0.2.9 LANGUAGES C CXX)
 enable_language("CXX")
 
 include(GitRevision)
@@ -36,32 +36,6 @@ if(NOT WIN32)
 	option(USE_NEON "enable NEON" OFF)
 endif()
 
-if(UNIX AND NOT CYGWIN)
-	# アーキテクチャ情報を取得
-	set(ARCH ${CMAKE_SYSTEM_PROCESSOR})
-
-	# アーキテクチャに応じたGNUトリプレットを生成
-	if(ARCH STREQUAL "x86_64")
-		set(ARCH_TRIPLET "x86_64-linux-gnu")
-	elseif(ARCH STREQUAL "aarch64")
-		set(ARCH_TRIPLET "aarch64-linux-gnu")
-	else()
-		message(WARNING "Unknown architecture: ${ARCH}. Defaulting to x86_64.")
-		set(ARCH_TRIPLET "x86_64-linux-gnu")
-	endif()
-
-	# インストール先のディレクトリを指定
-	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "default install path" FORCE)
-	endif()
-
-	if(CMAKE_INSTALL_PREFIX STREQUAL "/usr")
-		set(CMAKE_INSTALL_LIBDIR "lib/${ARCH_TRIPLET}")
-	else()
-		set(CMAKE_INSTALL_LIBDIR "lib")
-	endif()
-endif()
-
 # ---------- set variable (libaribb1) ----------
 
 set(ARIBB1_LIB_NAME "aribb1")
@@ -76,9 +50,9 @@ set(ARIBB1_PRODUCT "ARIB STD-B1")
 
 set(ARIBB1_MAJOR_VERSION "0")
 set(ARIBB1_MINOR_VERSION "2")
-set(ARIBB1_PATCH_VERSION "8")
+set(ARIBB1_PATCH_VERSION "9")
 set(ARIBB1_VERSION_NUMBER ${ARIBB1_MAJOR_VERSION}.${ARIBB1_MINOR_VERSION}.${ARIBB1_PATCH_VERSION})
-set(ARIBB1_VERSION_STRING stz-${ARIBB1_VERSION_NUMBER})
+set(ARIBB1_VERSION_STRING ${ARIBB1_VERSION_NUMBER})
 
 # ---------- set variable (libaribb25) ----------
 
@@ -94,9 +68,9 @@ set(ARIBB25_PRODUCT "ARIB STD-B25")
 
 set(ARIBB25_MAJOR_VERSION "0")
 set(ARIBB25_MINOR_VERSION "2")
-set(ARIBB25_PATCH_VERSION "8")
+set(ARIBB25_PATCH_VERSION "9")
 set(ARIBB25_VERSION_NUMBER ${ARIBB25_MAJOR_VERSION}.${ARIBB25_MINOR_VERSION}.${ARIBB25_PATCH_VERSION})
-set(ARIBB25_VERSION_STRING stz-${ARIBB25_VERSION_NUMBER})
+set(ARIBB25_VERSION_STRING ${ARIBB25_VERSION_NUMBER})
 
 # ---------- define flags ----------
 
@@ -110,7 +84,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "(GNU|Clang)")
 	set(CMAKE_SHARED_LINKER_FLAGS "-fvisibility=hidden")
 
 	if(UNIX AND NOT CYGWIN)
-		include(LinuxPackage)
 		include(ElfInterp)
 		set(CMAKE_C_FLAGS   "-fPIC ${CMAKE_C_FLAGS}")
 		set(CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
@@ -127,7 +100,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "(GNU|Clang)")
 	endif()
 
 	if(USE_AVX2)
-#		add_definitions("-DENABLE_MULTI2_SIMD")
 		set(CMAKE_C_FLAGS   "-mavx2 ${CMAKE_C_FLAGS}")
 		set(CMAKE_CXX_FLAGS "-mavx2 ${CMAKE_CXX_FLAGS}")
 	endif()
@@ -256,26 +228,42 @@ configure_file(aribb25/version_b25.rc.in version_b25.rc @ONLY)
 
 if(UNIX AND NOT CYGWIN)
 
+	add_custom_target(create_symlinks ALL)
+
 	# ---------- libaribb1 ----------
 
 	configure_file(aribb25/libaribb1.pc.in ${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB1_LIB_NAME}.pc @ONLY)
+	add_custom_command(TARGET create_symlinks COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB1_LIB_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX} symlink-${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB1_LIB_NAME})
+	add_custom_command(TARGET create_symlinks COMMAND ${CMAKE_COMMAND} -E create_symlink aribb1 symlink-${ARIBB1_LIB_NAME})
+	add_dependencies(aribb1-static create_symlinks)
+	add_dependencies(aribb1-shared create_symlinks)
 
 	install(TARGETS b1 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS arib-b1-stream-test RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb1-static aribb1-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
+	install(DIRECTORY DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
+	install(FILES aribb25/arib_std_b25_error_code.h aribb25/arib_std_b25.h aribb25/b_cas_card_error_code.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/portable.h aribb25/simd_instruction_type.h aribb25/ts_common_types.h aribb25/ts_section_parser_error_code.h aribb25/ts_section_parser.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB1_LIB_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/symlink-${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB1_LIB_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR} RENAME ${CMAKE_SHARED_LIBRARY_PREFIX}arib1${CMAKE_SHARED_LIBRARY_SUFFIX})
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/symlink-${ARIBB1_LIB_NAME} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} RENAME arib1)
 	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -DLDCONFIG_EXECUTABLE=${LDCONFIG_EXECUTABLE} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PostInstall.cmake)")
 
 	# ---------- libaribb25 ----------
 
 	configure_file(aribb25/libaribb25.pc.in ${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}.pc @ONLY)
+	add_custom_command(TARGET create_symlinks COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX} symlink-${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME})
+	add_custom_command(TARGET create_symlinks COMMAND ${CMAKE_COMMAND} -E create_symlink aribb25 symlink-${ARIBB25_LIB_NAME})
+	add_dependencies(aribb25-static create_symlinks)
+	add_dependencies(aribb25-shared create_symlinks)
 
 	install(TARGETS b25 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS arib-b25-stream-test RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb25-static aribb25-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
+	install(DIRECTORY DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
+	install(FILES aribb25/arib_std_b25_error_code.h aribb25/arib_std_b25.h aribb25/b_cas_card_error_code.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/portable.h aribb25/simd_instruction_type.h aribb25/ts_common_types.h aribb25/ts_section_parser_error_code.h aribb25/ts_section_parser.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/symlink-${CMAKE_SHARED_LIBRARY_PREFIX}${ARIBB25_LIB_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR} RENAME ${CMAKE_SHARED_LIBRARY_PREFIX}arib25${CMAKE_SHARED_LIBRARY_SUFFIX})
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/symlink-${ARIBB25_LIB_NAME} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} RENAME arib25)
 	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -DLDCONFIG_EXECUTABLE=${LDCONFIG_EXECUTABLE} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PostInstall.cmake)")
 
 	add_custom_target(uninstall ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Uninstall.cmake)
@@ -288,14 +276,32 @@ elseif(WIN32)
 
 	install(TARGETS b1 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb1-static aribb1-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR})
-	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
+	install(FILES aribb25/arib_std_b25_error_code.h aribb25/arib_std_b25.h aribb25/b_cas_card_error_code.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/portable.h aribb25/simd_instruction_type.h aribb25/ts_common_types.h aribb25/ts_section_parser_error_code.h aribb25/ts_section_parser.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb1)
 
 	# ---------- libaribb25 ----------
 
 	install(TARGETS b25 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(TARGETS aribb25-static aribb25-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR})
-	install(FILES aribb25/arib_std_b25.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/ts_section_parser.h aribb25/portable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
+	install(FILES aribb25/arib_std_b25_error_code.h aribb25/arib_std_b25.h aribb25/b_cas_card_error_code.h aribb25/b_cas_card.h aribb25/multi2.h aribb25/portable.h aribb25/simd_instruction_type.h aribb25/ts_common_types.h aribb25/ts_section_parser_error_code.h aribb25/ts_section_parser.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aribb25)
 
 	add_custom_target(uninstall ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Uninstall.cmake)
 
+endif()
+
+# ---------- CPack ----------
+
+# CPack を使用して Debian パッケージをビルドする際は、常に `cmake -B build -DCMAKE_INSTALL_PREFIX=/usr` と実行しなければならない
+# CMAKE_INSTALL_PREFIX はデフォルトで /usr/local に設定されているが、何らかの理由でライブラリを /usr/lib に配置する Debian パッケージが生成されてしまう
+# この結果、pkg-config 設定ファイルの記述内容と齟齬が発生し、外部ソフトウェアがライブラリを正しくリンクできなくなる
+
+if(UNIX AND NOT CYGWIN AND NOT APPLE)
+	set(CPACK_GENERATOR "DEB")
+	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "ARIB STD-B1 / ARIB STD-B25 library")
+	set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+	set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+	set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")  # ref: https://stackoverflow.com/a/59202791/17124142
+	set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpcsclite1 (>= 1.8.23)")
+	SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "tsukumi <tsukumijima@users.noreply.github.com>")
+	set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+	include(CPack)
 endif()

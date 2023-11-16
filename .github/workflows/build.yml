@@ -6,13 +6,16 @@ jobs:
     name: Ubuntu
     strategy:
       matrix:
+        os:
+          - ubuntu-20.04
+          - ubuntu-22.04
         cc: [gcc, clang]
         include:
           - cc: gcc
             cxx: g++
           - cc: clang
             cxx: clang++
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     env:
       CLICOLOR_FORCE: 1
     steps:
@@ -29,21 +32,21 @@ jobs:
         run: |
           ./build/b1 2>&1 | grep --color=always "ARIB STD-B1"
           ./build/b25 2>&1 | grep --color=always "ARIB STD-B25"
+          ./build/arib-b1-stream-test --help 2>&1 | grep --color=always "ARIB STD-B1"
+          ./build/arib-b25-stream-test --help 2>&1 | grep --color=always "ARIB STD-B25"
 
   arm:
     name: ARM
     strategy:
       matrix:
         image:
-          - raspbian/stretch
-          - arm32v7/ubuntu
           - arm64v8/ubuntu
+          - arm64v8/debian
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-qemu-action@v2
       - uses: docker/setup-buildx-action@v2
-
       - name: setup
         uses: docker/build-push-action@v3
         with:
@@ -53,7 +56,6 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,scope=${{ matrix.image }},mode=max
           load: true
-
       - name: configure
         run: |
           mkdir build
@@ -64,12 +66,16 @@ jobs:
         run: |
           docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './b1 2>&1 | grep --color=always "ARIB STD-B1"'
           docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './b25 2>&1 | grep --color=always "ARIB STD-B25"'
+          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './arib-b1-stream-test --help 2>&1 | grep --color=always "ARIB STD-B1"'
+          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './arib-b25-stream-test --help 2>&1 | grep --color=always "ARIB STD-B25"'
 
-  macosx:
-    name: macOS X
+  macos:
+    name: macOS
     strategy:
       matrix:
-        os: [macos-11, macos-12]
+        os:
+          - macos-12
+          - macos-13
     runs-on: ${{ matrix.os }}
     env:
       CLICOLOR_FORCE: 1
@@ -85,14 +91,16 @@ jobs:
         run: |
           ./build/b1 2>&1 | grep --color=always "ARIB STD-B1"
           ./build/b25 2>&1 | grep --color=always "ARIB STD-B25"
+          ./build/arib-b1-stream-test --help 2>&1 | grep --color=always "ARIB STD-B1"
+          ./build/arib-b25-stream-test --help 2>&1 | grep --color=always "ARIB STD-B25"
 
   windows:
     name: Windows
     strategy:
       matrix:
         os:
-          - windows-2022
           - windows-2019
+          - windows-2022
     runs-on: ${{ matrix.os }}
     steps:
       - name: setup msbuild
@@ -108,3 +116,7 @@ jobs:
           x64\Release\b1.exe 2>&1 | findstr "ARIB STD-B1"
           Win32\Release\b25.exe 2>&1 | findstr "ARIB STD-B25"
           x64\Release\b25.exe 2>&1 | findstr "ARIB STD-B25"
+          Win32\Release\arib-b1-stream-test.exe --help 2>&1 | findstr "ARIB STD-B1"
+          x64\Release\arib-b1-stream-test.exe --help 2>&1 | findstr "ARIB STD-B1"
+          Win32\Release\arib-b25-stream-test.exe --help 2>&1 | findstr "ARIB STD-B25"
+          x64\Release\arib-b25-stream-test.exe --help 2>&1 | findstr "ARIB STD-B25"

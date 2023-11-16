@@ -1,4 +1,4 @@
-#define VERSION_STRING "0.2.8"
+#define VERSION_STRING "0.2.9"
 
 #include <stdlib.h>
 #include <stdio.h>
