@@ -112,6 +112,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "(GNU|Clang)")
 elseif(CMAKE_C_COMPILER_ID MATCHES "MSVC")
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
 	set(CMAKE_SUPPRESS_REGENERATION TRUE)
+	add_compile_options("/utf-8")
 
 	if(USE_AVX2)
 		add_definitions("-DENABLE_MULTI2_SIMD")
