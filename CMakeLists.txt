@@ -34,7 +34,7 @@ if(WIN32)
 	option(USE_UNICODE "enable unicode support" ON)
 endif()
 option(USE_AVX2 "enable AVX2" OFF)
-if(NOT WIN32)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(ARM|ARM64|AARCH64)")
 	option(USE_NEON "enable NEON" OFF)
 endif()
 
@@ -138,7 +138,7 @@ link_directories(${PCSC_LIBRARY_DIRS})
 
 # ---------- libaribb1 ----------
 
-if(WIN32)
+if(WIN32 AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "(ARM|ARM64|AARCH64)")
 add_library(aribb1-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.c aribb25/multi2_simd.c aribb25/ts_section_parser.c aribb25/version_b1.c)
 else()
 add_library(aribb1-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.cc aribb25/ts_section_parser.c aribb25/version_b1.c)
@@ -186,7 +186,7 @@ configure_file(aribb25/version_b1.rc.in version_b1.rc @ONLY)
 
 # ---------- libaribb25 ----------
 
-if(WIN32)
+if(WIN32 AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "(ARM|ARM64|AARCH64)")
 add_library(aribb25-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.c aribb25/multi2_simd.c aribb25/ts_section_parser.c aribb25/version_b25.c)
 else()
 add_library(aribb25-objlib OBJECT aribb25/arib_std_b25.c aribb25/b_cas_card.c aribb25/multi2.cc aribb25/ts_section_parser.c aribb25/version_b25.c)
