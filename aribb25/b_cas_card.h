@@ -67,6 +67,7 @@ extern "C" {
 #endif
 
 extern B_CAS_CARD *create_b_cas_card(void);
+extern int override_card_reader_name_pattern(const char * name);
 
 #ifdef __cplusplus
 }
