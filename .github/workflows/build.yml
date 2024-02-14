@@ -19,7 +19,7 @@ jobs:
     env:
       CLICOLOR_FORCE: 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: setup
         run: sudo apt-get install -y build-essential clang cmake cmake-data libpcsclite-dev
       - name: configure
@@ -44,11 +44,11 @@ jobs:
           - arm64v8/debian
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: docker/setup-qemu-action@v2
-      - uses: docker/setup-buildx-action@v2
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
       - name: setup
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .github/workflows/
           tags: ${{ matrix.image }}:build
@@ -80,7 +80,7 @@ jobs:
     env:
       CLICOLOR_FORCE: 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: configure
         run: |
           cmake --version
@@ -104,8 +104,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: setup msbuild
-        uses: microsoft/setup-msbuild@v1.1
-      - uses: actions/checkout@v3
+        uses: microsoft/setup-msbuild@v2
+      - uses: actions/checkout@v4
       - name: build
         run: |
           msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v142
