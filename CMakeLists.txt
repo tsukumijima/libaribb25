@@ -269,6 +269,9 @@ if(UNIX AND NOT CYGWIN)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/symlink-${ARIBB25_LIB_NAME} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} RENAME arib25)
 	install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -DLDCONFIG_EXECUTABLE=${LDCONFIG_EXECUTABLE} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PostInstall.cmake)")
 
+	configure_file(aribb25/${ARIBB25_LIB_NAME}.pc.in ${ARIBB25_LIB_NAME}.pc @ONLY)
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${ARIBB25_LIB_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
 	add_custom_target(uninstall ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Uninstall.cmake)
 
 # ---------- install (Windows) ----------
