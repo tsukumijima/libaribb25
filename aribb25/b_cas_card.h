@@ -66,8 +66,13 @@ typedef struct {
 extern "C" {
 #endif
 
+#if defined(_WIN32)
+#  include <tchar.h>
+#else
+#  define TCHAR char
+#endif
 extern B_CAS_CARD *create_b_cas_card(void);
-extern int override_card_reader_name_pattern(const char * name);
+extern int override_card_reader_name_pattern(const TCHAR * name);
 
 #ifdef __cplusplus
 }

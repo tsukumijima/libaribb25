@@ -9,9 +9,7 @@
 #include <winscard.h>
 #if defined(_WIN32)
 #  include <windows.h>
-#  include <tchar.h>
 #else
-#  define TCHAR char
 #  if !defined(__CYGWIN__)
 #    include <wintypes.h>
 #  endif
@@ -20,6 +18,7 @@
 #  endif
 #  define _tcslen strlen
 #  define _tcscmp strcmp
+#  define _tcscpy strcpy
 #  define _T(x) x
 #endif
 
@@ -102,7 +101,7 @@ static const uint8_t EMM_RECEIVE_CMD_HEADER[] = {
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 static void release_b_cas_card(void *bcas);
 static int init_b_cas_card(void *bcas);
-static int init_b_cas_card_with_name(void *bcas, const char * card_reader_name);
+static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name);
 static int get_init_status_b_cas_card(void *bcas, B_CAS_INIT_STATUS *stat);
 static int get_id_b_cas_card(void *bcas, B_CAS_ID *dst);
 static int get_pwr_on_ctrl_b_cas_card(void *bcas, B_CAS_PWR_ON_CTRL_INFO *dst);
@@ -140,10 +139,10 @@ B_CAS_CARD *create_b_cas_card(void)
 	return r;
 }
 
-static char pattern[1024] = "";
-int override_card_reader_name_pattern(const char * name) {
+static const TCHAR pattern[1024] = _T("");
+int override_card_reader_name_pattern(const TCHAR * name) {
 	if (_tcslen(name) > 0 && _tcslen(name) < 1024) {
-		strcpy(pattern, name);
+		_tcscpy(pattern, name);
 		return 0;
 	} else {
 		return -1;
@@ -222,11 +221,11 @@ static int init_b_cas_card(void *bcas)
 	}
 #endif
 	else {
-		return init_b_cas_card_with_name(bcas, "");
+		return init_b_cas_card_with_name(bcas, _T(""));
 	}
 }
 
-static int init_b_cas_card_with_name(void *bcas, const char * card_reader_name)
+static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name)
 {
 	int m;
 	long ret;
