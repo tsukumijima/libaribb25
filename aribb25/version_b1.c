@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <config.h>
 
+// See https://github.com/open62541/open62541/commit/ea258bc825e7b01bc92544ac83d8215fe0c72a07
+#if defined(_WIN32)
+#include <stdlib.h>
+#else
+#include <unistd.h>
+#endif
 #if defined(__GNUC__) || defined(__clang__)
 #  if !defined(__APPLE__)
 const char elf_interp[] __attribute__((section(".interp"))) = ELF_INTERP;
 #  endif
-#include <unistd.h>
 
 void show_version(void)
 {
