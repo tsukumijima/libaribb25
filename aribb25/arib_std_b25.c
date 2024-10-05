@@ -444,8 +444,9 @@ static void extract_emm_fixed_part(EMM_FIXED_PART *dst, uint8_t *src);
 static uint8_t *resync(uint8_t *head, uint8_t *tail, int32_t unit);
 static uint8_t *resync_force(uint8_t *head, uint8_t *tail, int32_t unit);
 
+#ifdef USE_BENCHMARK
 static void fill_random_bytes(uint8_t *data, size_t size);
-
+#endif
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  interface method implementation
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -2145,6 +2146,8 @@ LAST:
 			r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
 		}
 	}
+
+	return r;
 }
 
 #if defined(DEBUG)
@@ -3026,6 +3029,10 @@ static uint8_t *resync_force(uint8_t *head, uint8_t *tail, int32_t unit_size)
 	return NULL;
 }
 
+#ifdef USE_BENCHMARK
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ test function implementation
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 void fill_random_bytes(uint8_t *data, size_t size)
 {
 	uint8_t mask = 0xFF;
@@ -3036,10 +3043,6 @@ void fill_random_bytes(uint8_t *data, size_t size)
 	}
 }
 
-/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- test function implementation
- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-#ifdef USE_BENCHMARK
 #define PACKETS_PER_SEC 10000
 int test_multi2_decryption(void *std_b25, int64_t *time, int32_t instruction, int32_t round)
 {
