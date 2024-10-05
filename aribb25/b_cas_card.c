@@ -139,8 +139,8 @@ B_CAS_CARD *create_b_cas_card(void)
 	return r;
 }
 
-static const TCHAR pattern[1024] = _T("");
-int override_card_reader_name_pattern(const TCHAR * name) {
+static TCHAR pattern[1024] = _T("");
+int override_card_reader_name_pattern(TCHAR * name) {
 	if (_tcslen(name) > 0 && _tcslen(name) < 1024) {
 		_tcscpy(pattern, name);
 		return 0;
@@ -210,7 +210,7 @@ static int init_b_cas_card(void *bcas)
 	}
 #endif
 
-	if (pattern != NULL && _tcslen(pattern) > 0 && _tcslen(pattern) < 1024) {
+	if (_tcslen(pattern) > 0 && _tcslen(pattern) < 1024) {
 		return init_b_cas_card_with_name(bcas, pattern);
 	}
 #if defined(_WIN32)
