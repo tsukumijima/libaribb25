@@ -2146,6 +2146,8 @@ LAST:
 			r = ARIB_STD_B25_ERROR_ECM_PARSE_FAILURE;
 		}
 	}
+
+	return r;
 }
 
 #if defined(DEBUG)
