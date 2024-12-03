@@ -39,6 +39,7 @@ typedef struct {
 	int32_t power_ctrl;
 	int32_t simd_instruction;
 	int32_t benchmark;
+	int32_t acas;
 } OPTION;
 
 static void show_usage();
@@ -141,6 +142,11 @@ static void show_usage()
 	_ftprintf(stderr, _T("     3: use AVX2 instruction if available (default)\n"));
 	_ftprintf(stderr, _T("  -b MULTI2 benchmark test for SIMD\n"));
 #endif
+#ifndef ENABLE_ARIB_STD_B1
+	_ftprintf(stderr, _T("  -a acas\n"));
+	_ftprintf(stderr, _T("     0: B-CAS mode (default)\n"));
+	_ftprintf(stderr, _T("     1: ACAS mode\n"));
+#endif
 	_ftprintf(stderr, _T("\n"));
 }
 
@@ -219,6 +225,16 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 			break;
 		case 'b':
 			dst->benchmark = 1;
+			break;
+#endif
+#ifndef ENABLE_ARIB_STD_B1
+		case 'a':
+			if(argv[i][2]){
+				dst->acas = _ttoi(argv[i]+2);
+			}else{
+				dst->acas = _ttoi(argv[i+1]);
+				i += 1;
+			}
 			break;
 #endif
 		default:
@@ -334,6 +350,14 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	if(bcas == NULL){
 		_ftprintf(stderr, _T("error - failed on create_b_cas_card()\n"));
 		goto LAST;
+	}
+
+	if(opt->acas){
+		code = bcas->set_acas_mode(bcas, opt->acas);
+		if(code < 0){
+			_ftprintf(stderr, _T("error - failed set_acas_mode : code=%d\n"), code);
+			goto LAST;
+		}
 	}
 
 	code = bcas->init(bcas);

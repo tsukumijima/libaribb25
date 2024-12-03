@@ -60,6 +60,7 @@ typedef struct {
 	int (* proc_ecm)(void *bcas, B_CAS_ECM_RESULT *dst, uint8_t *src, int len);
 	int (* proc_emm)(void *bcas, uint8_t *src, int len);
 
+	int (* set_acas_mode)(void *bcas, int enable);
 } B_CAS_CARD;
 
 #ifdef __cplusplus

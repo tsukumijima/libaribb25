@@ -49,6 +49,7 @@ typedef struct {
 	B_CAS_PWR_ON_CTRL_INFO  pwc;
 	int32_t                 pwc_max;
 
+	int                     acas;
 } B_CAS_CARD_PRIVATE_DATA;
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -107,6 +108,7 @@ static int get_id_b_cas_card(void *bcas, B_CAS_ID *dst);
 static int get_pwr_on_ctrl_b_cas_card(void *bcas, B_CAS_PWR_ON_CTRL_INFO *dst);
 static int proc_ecm_b_cas_card(void *bcas, B_CAS_ECM_RESULT *dst, uint8_t *src, int len);
 static int proc_emm_b_cas_card(void *bcas, uint8_t *src, int len);
+static int set_acas_mode_b_cas_card(void *bcas, int enable);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  global function implementation
@@ -135,6 +137,7 @@ B_CAS_CARD *create_b_cas_card(void)
 	r->get_pwr_on_ctrl = get_pwr_on_ctrl_b_cas_card;
 	r->proc_ecm = proc_ecm_b_cas_card;
 	r->proc_emm = proc_emm_b_cas_card;
+	r->set_acas_mode = set_acas_mode_b_cas_card;
 
 	return r;
 }
@@ -157,7 +160,7 @@ static B_CAS_CARD_PRIVATE_DATA *private_data(void *bcas);
 static void teardown(B_CAS_CARD_PRIVATE_DATA *prv);
 static int change_id_max(B_CAS_CARD_PRIVATE_DATA *prv, int max);
 static int change_pwc_max(B_CAS_CARD_PRIVATE_DATA *prv, int max);
-static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, LPCTSTR reader_name);
+static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, LPCTSTR reader_name, int acas);
 static void extract_power_on_ctrl_response(B_CAS_PWR_ON_CTRL *dst, uint8_t *src);
 static void extract_mjd(int *yy, int *mm, int *dd, int mjd);
 static int setup_ecm_receive_command(uint8_t *dst, uint8_t *src, int len);
@@ -230,6 +233,7 @@ static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name)
 	int m;
 	long ret;
 	unsigned long len;
+	int acas;
 
 	B_CAS_CARD_PRIVATE_DATA *prv;
 
@@ -238,6 +242,7 @@ static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name)
 		return B_CAS_CARD_ERROR_INVALID_PARAMETER;
 	}
 
+	acas = prv->acas;
 	teardown(prv);
 
 	ret = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &(prv->mng));
@@ -270,6 +275,7 @@ static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name)
 		return B_CAS_CARD_ERROR_NO_SMART_CARD_READER;
 	}
 
+retry:
 	while( prv->reader[0] != 0 ){
 
 #if defined(_WIN32)
@@ -283,7 +289,7 @@ static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name)
 		// 取得したカードリーダー名のカードリーダーなら接続を試みる
 		// もしカードリーダー名が空文字列ならすべてのカードリーダーに接続を試み、最初に見つかったカードリーダーに接続する
 		if(_tcscmp(card_reader_name, prv->reader) == 0 || _tcscmp(card_reader_name, _T("")) == 0){
-			if(connect_card(prv, prv->reader)){
+			if(connect_card(prv, prv->reader, acas)){
 #if defined(_WIN32)
 				OutputDebugString(TEXT("libaribb25: connected card reader name:"));
 				OutputDebugString(prv->reader);
@@ -307,6 +313,11 @@ static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name)
 	}
 
 	if(prv->card == 0){
+		if(!prv->acas && !acas){
+			prv->reader = (LPTSTR)(prv->pool);
+			acas = 1;
+			goto retry;
+		}
 #if defined(_WIN32)
 		OutputDebugString(TEXT("libaribb25: all the attempts failed."));
 #elif defined(DEBUG)
@@ -315,6 +326,14 @@ static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name)
 		return B_CAS_CARD_ERROR_ALL_READERS_CONNECTION_FAILED;
 	}
 
+	if(!prv->acas && acas) {
+#if defined(_WIN32)
+		OutputDebugString(TEXT("libaribb25: ACAS detected."));
+#elif defined(DEBUG)
+		fprintf(stderr, "libaribb25: ACAS detected.\n");
+#endif
+	}
+	prv->acas = acas;
 	return 0;
 }
 
@@ -361,6 +380,9 @@ static int get_id_b_cas_card(void *bcas, B_CAS_ID *dst)
 
 	slen = sizeof(CARD_ID_INFORMATION_ACQUIRE_CMD);
 	memcpy(prv->sbuf, CARD_ID_INFORMATION_ACQUIRE_CMD, slen);
+	if(prv->acas){
+		prv->sbuf[3] = 0x01;
+	}
 	rlen = B_CAS_BUFFER_MAX;
 
 	ret = SCardTransmit(prv->card, SCARD_PCI_T1, prv->sbuf, slen, NULL, prv->rbuf, &rlen);
@@ -427,6 +449,9 @@ static int get_pwr_on_ctrl_b_cas_card(void *bcas, B_CAS_PWR_ON_CTRL_INFO *dst)
 
 	slen = sizeof(POWER_ON_CONTROL_INFORMATION_REQUEST_CMD);
 	memcpy(prv->sbuf, POWER_ON_CONTROL_INFORMATION_REQUEST_CMD, slen);
+	if(prv->acas){
+		prv->sbuf[3] = 0x01;
+	}
 	prv->sbuf[5] = 0;
 	rlen = B_CAS_BUFFER_MAX;
 
@@ -494,6 +519,9 @@ static int proc_ecm_b_cas_card(void *bcas, B_CAS_ECM_RESULT *dst, uint8_t *src, 
 	}
 
 	slen = setup_ecm_receive_command(prv->sbuf, src, len);
+	if(prv->acas){
+		prv->sbuf[3] = 0x02;
+	}
 	rlen = B_CAS_BUFFER_MAX;
 
 	retry_count = 0;
@@ -580,6 +608,9 @@ static int proc_emm_b_cas_card(void *bcas, uint8_t *src, int len)
 	}
 
 	slen = setup_emm_receive_command(prv->sbuf, src, len);
+	if(prv->acas){
+		prv->sbuf[3] = 0x02;
+	}
 	rlen = B_CAS_BUFFER_MAX;
 
 	retry_count = 0;
@@ -599,6 +630,18 @@ static int proc_emm_b_cas_card(void *bcas, uint8_t *src, int len)
 		return B_CAS_CARD_ERROR_TRANSMIT_FAILED;
 	}
 
+	return 0;
+}
+
+static int set_acas_mode_b_cas_card(void *bcas, int enable)
+{
+	B_CAS_CARD_PRIVATE_DATA *prv;
+
+	prv = private_data(bcas);
+	if(prv == NULL){
+		return B_CAS_CARD_ERROR_INVALID_PARAMETER;
+	}
+	prv->acas = enable;
 	return 0;
 }
 
@@ -729,7 +772,7 @@ static int change_pwc_max(B_CAS_CARD_PRIVATE_DATA *prv, int max)
 	return 0;
 }
 
-static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, LPCTSTR reader_name)
+static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, LPCTSTR reader_name, int acas)
 {
 	int m,n;
 
@@ -750,6 +793,9 @@ static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, LPCTSTR reader_name)
 
 	m = sizeof(INITIAL_SETTING_CONDITIONS_CMD);
 	memcpy(prv->sbuf, INITIAL_SETTING_CONDITIONS_CMD, m);
+	if(acas){
+		prv->sbuf[3] = 0x02;
+	}
 	rlen = B_CAS_BUFFER_MAX;
 	ret = SCardTransmit(prv->card, SCARD_PCI_T1, prv->sbuf, m, NULL, prv->rbuf, &rlen);
 	if(ret != SCARD_S_SUCCESS){
