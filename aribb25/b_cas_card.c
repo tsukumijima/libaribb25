@@ -306,6 +306,11 @@ retry:
 				fprintf(stderr, "libaribb25: failed to connect card reader name:\n");
 				fprintf(stderr, "%.1024s\n", prv->reader);
 #endif
+				if(prv->card != 0){
+					SCardDisconnect(prv->card, SCARD_RESET_CARD);
+					prv->card = 0;
+				}
+
 			}
 		}
 
@@ -780,11 +785,6 @@ static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, LPCTSTR reader_name, int a
 	unsigned long rlen,protocol;
 
 	uint8_t *p;
-
-	if(prv->card != 0){
-		SCardDisconnect(prv->card, SCARD_RESET_CARD);
-		prv->card = 0;
-	}
 
 	ret = SCardConnect(prv->mng, reader_name, SCARD_SHARE_SHARED, SCARD_PROTOCOL_T1, &(prv->card), &protocol);
 	if(ret != SCARD_S_SUCCESS){
