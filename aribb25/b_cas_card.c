@@ -614,7 +614,7 @@ static int proc_emm_b_cas_card(void *bcas, uint8_t *src, int len)
 
 	slen = setup_emm_receive_command(prv->sbuf, src, len);
 	if(prv->acas){
-		prv->sbuf[3] = 0x02;
+		prv->sbuf[3] = 0x01;
 	}
 	rlen = B_CAS_BUFFER_MAX;
 
