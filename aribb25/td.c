@@ -581,13 +581,15 @@ static void show_bcas_power_on_control_info(B_CAS_CARD *bcas)
 		_ftprintf(stderr, _T("+ [%d] : tune "), i);
 		switch(pwc.data[i].network_id){
 		case 4:
+		case 0xb:
 			w = pwc.data[i].transport_id;
-			_ftprintf(stderr, _T("BS-%d/TS-%d "), ((w >> 4) & 0x1f), (w & 7));
+			_ftprintf(stderr, _T("BS-%d/0x%04x "), ((w >> 4) & 0x1f), w);
 			break;
 		case 6:
 		case 7:
+		case 0xc:
 			w = pwc.data[i].transport_id;
-			_ftprintf(stderr, _T("ND-%d/TS-%d "), ((w >> 4) & 0x1f), (w & 7));
+			_ftprintf(stderr, _T("ND-%d/0x%04x "), ((w >> 4) & 0x1f), w);
 			break;
 		default:
 			_ftprintf(stderr, _T("unknown(b:0x%02x,n:0x%04x,t:0x%04x) "), pwc.data[i].broadcaster_group_id, pwc.data[i].network_id, pwc.data[i].transport_id);
