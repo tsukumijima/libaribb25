@@ -165,6 +165,7 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 	dst->verbose = 1;
 	dst->simd_instruction = 3;
 	dst->benchmark = 0;
+	dst->acas = 0;
 
 	for(i=1;i<argc;i++){
 		if(argv[i][0] != '-'){
