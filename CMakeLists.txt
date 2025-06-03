@@ -221,7 +221,7 @@ configure_file(aribb25/version_b25.rc.in version_b25.rc @ONLY)
 add_executable(arib-b25-stream-test aribb25/td.c ${CMAKE_CURRENT_BINARY_DIR}/version_b25.rc)
 set_target_properties(arib-b25-stream-test PROPERTIES OUTPUT_NAME ${ARIBB25_STREAM_TEST_NAME})
 target_link_libraries(arib-b25-stream-test PRIVATE ${PCSC_LIBRARIES})
-target_link_libraries(arib-b25-stream-test PRIVATE aribb25-shared)
+target_link_libraries(arib-b25-stream-test PRIVATE aribb25-static)
 target_compile_definitions(arib-b25-stream-test PRIVATE ENABLE_ARIB_STREAM_TEST)
 
 configure_file(aribb25/config.h.in config.h @ONLY)
