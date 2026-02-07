@@ -72,7 +72,7 @@ extern "C" {
 #  define TCHAR char
 #endif
 extern B_CAS_CARD *create_b_cas_card(void);
-extern int override_card_reader_name_pattern(const TCHAR * name);
+extern int override_card_reader_name_pattern(TCHAR * name);
 
 #ifdef __cplusplus
 }
