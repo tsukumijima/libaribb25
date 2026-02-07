@@ -210,22 +210,23 @@ static int set_simd_multi2(void *m2, enum INSTRUCTION_TYPE instruction)
 			alloc_data_for_simd(prv);
 			simd = prv->simd;
 		}
-		instruction = get_simd_instruction();
-		if(instruction == INSTRUCTION_AVX2){
-			simd->decrypt = decrypt_multi2_with_avx2;
-		}else if(instruction == INSTRUCTION_SSSE3){
-			simd->decrypt = decrypt_multi2_with_ssse3;
-		}else if(instruction == INSTRUCTION_SSE2){
-			simd->decrypt = decrypt_multi2_with_sse2;
-		}else{
-			simd->decrypt = decrypt_multi2_without_simd;
+		if(simd != NULL){
+			instruction = get_simd_instruction();
+			if(instruction == INSTRUCTION_AVX2){
+				simd->decrypt = decrypt_multi2_with_avx2;
+			}else if(instruction == INSTRUCTION_SSSE3){
+				simd->decrypt = decrypt_multi2_with_ssse3;
+			}else if(instruction == INSTRUCTION_SSE2){
+				simd->decrypt = decrypt_multi2_with_sse2;
+			}else{
+				simd->decrypt = decrypt_multi2_without_simd;
+			}
+			return 0;
 		}
-		return 0;
-	}else{
-		r->decrypt = decrypt_multi2;
-		release_data_for_simd(prv);
-		return MULTI2_ERROR_INVALID_PARAMETER;
 	}
+	r->decrypt = decrypt_multi2;
+	release_data_for_simd(prv);
+	return MULTI2_ERROR_INVALID_PARAMETER;
 #endif	/* ENABLE_MULTI2_SIMD */
 }
 
