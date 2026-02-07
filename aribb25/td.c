@@ -229,16 +229,32 @@ static int parse_arg(OPTION *dst, int argc, TCHAR **argv)
 			break;
 #endif
 #ifndef ENABLE_ARIB_STD_B1
-		case 'a':
-			if(argv[i][2]){
-				dst->acas = _ttoi(argv[i]+2);
-			}else{
-				dst->acas = _ttoi(argv[i+1]);
-				i += 1;
-			}
-			break;
+			case 'a':
+				if(argv[i][2]){
+					dst->acas = _ttoi(argv[i]+2);
+				}else{
+					if((i + 1) >= argc){
+						_ftprintf(stderr, _T("error - option '-a' needs a value (0 or 1)\n"));
+#ifdef ENABLE_ARIB_STREAM_TEST
+						return -1;  // show usage
+#else
+						return argc;
 #endif
-		default:
+					}
+					dst->acas = _ttoi(argv[i+1]);
+					i += 1;
+				}
+				if((dst->acas != 0) && (dst->acas != 1)){
+					_ftprintf(stderr, _T("error - invalid '-a' value: %d (use 0 or 1)\n"), dst->acas);
+#ifdef ENABLE_ARIB_STREAM_TEST
+					return -1;  // show usage
+#else
+					return argc;
+#endif
+				}
+				break;
+#endif
+			default:
 			_ftprintf(stderr, _T("error - unknown option '-%c'\n"), argv[i][1]);
 #ifdef ENABLE_ARIB_STREAM_TEST
 			return -1;  // show usage
@@ -354,6 +370,10 @@ static void test_arib_std_b25(const TCHAR *src, const TCHAR *dst, OPTION *opt)
 	}
 
 	if(opt->acas){
+		if(bcas->set_acas_mode == NULL){
+			_ftprintf(stderr, _T("error - B_CAS_CARD::set_acas_mode() is not available\n"));
+			goto LAST;
+		}
 		code = bcas->set_acas_mode(bcas, opt->acas);
 		if(code < 0){
 			_ftprintf(stderr, _T("error - failed set_acas_mode : code=%d\n"), code);

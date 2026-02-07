@@ -647,6 +647,9 @@ static int set_acas_mode_b_cas_card(void *bcas, int enable)
 	if(prv == NULL){
 		return B_CAS_CARD_ERROR_INVALID_PARAMETER;
 	}
+	if((enable != 0) && (enable != 1)){
+		return B_CAS_CARD_ERROR_INVALID_PARAMETER;
+	}
 	prv->acas = enable;
 	return 0;
 }

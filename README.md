@@ -1,11 +1,6 @@
 
 # libaribb25
 
-## ACAS対応版
-
-コマンドライン引数に`-a 1`を指定するとACASをB-CASとして利用できるようになります。
-指定しない場合自動判定しますがカードがリセットされるため指定した方が良いです。
-
 ## このフォークについて
 
 散逸している libaribb25 派生のソースコードやパッチを一つのコードベースにまとめる事を目的とした、Windows・Linux 共用の ARIB STD-B1 / ARIB STD-B25 ライブラリです。  
@@ -65,6 +60,20 @@ Mirakurun で受信した放送波のスクランブルを解除するための 
 [arib-b25-stream-test_for_win](https://github.com/daig0rian/arib-b25-stream-test_for_win) のコードを参考に、Linux 対応を追加して現行のコードに手作業で統合しました。  
 ENABLE_ARIB_STREAM_TEST プリプロセッサが定義された状態でビルドすると、b1・b25 ではなく arib-b1-stream-test・arib-b25-stream-test が生成されます。  
 arib-b1-stream-test・arib-b25-stream-test の統合にともない、Windows (Visual Studio)・Linux (CMake) の両方で libaribb1・libaribb25 と同時に arib-b1-stream-test・arib-b25-stream-test が生成できるよう、Visual Studio のプロジェクトファイルと CMakeList.txt を変更しています。
+
+### ACAS 対応
+
+ARIB STD-B25 側 (b25 / arib-b25-stream-test / libaribb25) で、ACAS カードを利用してスクランブル解除を行えるようにしました。  
+従来の B-CAS カード向け処理は維持しているため、既存の利用方法には影響しません。
+
+b25 / arib-b25-stream-test では、下記のコマンドラインオプションを追加しています。
+
+- `-a acas`
+  - `0`: B-CAS モード (既定)
+  - `1`: ACAS モード
+
+`-a 1` を指定すると、カード初期化時から ACAS モードで接続を試行します。  
+`-a` を指定しない場合は既定で B-CAS モードで動作し、接続に失敗した場合に ACAS モードで再試行します。
 
 ### B25Decoder 互換インターフェイスの対応
 
