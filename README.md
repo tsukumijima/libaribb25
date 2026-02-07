@@ -4,7 +4,7 @@
 ## このフォークについて
 
 散逸している libaribb25 派生のソースコードやパッチを一つのコードベースにまとめる事を目的とした、Windows・Linux 共用の ARIB STD-B1 / ARIB STD-B25 ライブラリです。  
-[epgdatacapbon 版](https://github.com/epgdatacapbon/libaribb25) 版と [stz2012 版](https://github.com/stz2012/libarib25) を統合し、同じコードベースから Windows 向けと Linux 向け両方の libaribb25 をビルドできるようになったほか、スカパー！プレミアムサービス (libaribb1) への対応、arib-b25-stream-test への対応、Windows 向け SIMD 実装の統合も行っています。
+[epgdatacapbon 版](https://github.com/epgdatacapbon/libaribb25) 版と [stz2012 版](https://github.com/stz2012/libarib25) を統合し、同じコードベースから Windows 向けと Linux 向け両方の libaribb25 をビルドできるようになったほか、スカパー！プレミアムサービス (libaribb1) への対応、arib-b25-stream-test への対応、ACAS 対応、Windows 向け SIMD 実装の統合も行っています。
 
 細心の注意を払ってコードを統合したほか、libaribb1・libaribb25 ともに動作確認を行っています。  
 ただし、私が C/C++ が書けず、コードの実装内容を正確に理解できているわけでもないため、100% 動作する保証はありません。自己の責任のもとでお願いします。  
@@ -61,11 +61,16 @@ Mirakurun で受信した放送波のスクランブルを解除するための 
 ENABLE_ARIB_STREAM_TEST プリプロセッサが定義された状態でビルドすると、b1・b25 ではなく arib-b1-stream-test・arib-b25-stream-test が生成されます。  
 arib-b1-stream-test・arib-b25-stream-test の統合にともない、Windows (Visual Studio)・Linux (CMake) の両方で libaribb1・libaribb25 と同時に arib-b1-stream-test・arib-b25-stream-test が生成できるよう、Visual Studio のプロジェクトファイルと CMakeList.txt を変更しています。
 
-### ACAS 対応
+### ACAS 対応 (v0.2.10 以降)
 
-ARIB STD-B25 側 (b25 / arib-b25-stream-test / libaribb25) で、ACAS カードを利用してスクランブル解除を行えるようにしました。  
-従来の B-CAS カード向け処理は維持しているため、通常の B-CAS 利用方法への影響はありません。  
-なお、`-a` を指定しない場合の初期化時に限り、B-CAS モードで接続に失敗した際のフォールバックとして ACAS モードで再試行するようになっています。
+ARIB STD-B25 側 (b25 / arib-b25-stream-test / libaribb25) で、ACAS カードによるスクランブル解除に対応しました。  
+従来の B-CAS カード向けの処理はそのまま維持しているため、B-CAS カードを使った既存の動作には一切影響を与えません。ABI にも互換性があるはずです。
+
+`-a` オプションを指定しない場合、まず B-CAS モードで接続を試み、失敗した場合は自動的に ACAS モードで再試行します。
+
+> [!NOTE]  
+> [mmttmte/libaribb25](https://github.com/mmttmte/libaribb25) をベースに改良が加えられていた [hendecarows/libaribb25 (docker-4k branch)](https://github.com/hendecarows/libaribb25/tree/docker-4k) にある ACAS 対応フォークでの変更を、一部修正の上で取り込みました。  
+> なお、B61 デコードには対応していません。代わりに [mmttmte/arib-b61-stream-test](https://github.com/mmttmte/arib-b61-stream-test) をご利用ください。
 
 b25 / arib-b25-stream-test では、下記のコマンドラインオプションを追加しています。
 
@@ -76,8 +81,9 @@ b25 / arib-b25-stream-test では、下記のコマンドラインオプショ�
 `-a 1` を指定すると、カード初期化時から ACAS モードで接続を試行します。  
 `-a` を指定しない場合は既定で B-CAS モードで動作し、接続に失敗した場合に ACAS モードで再試行します。
 
-> [!NOTE]  
-> `set_acas_mode` を含む ACAS 対応 API を利用する際は、ヘッダファイルとライブラリを同じバージョンで揃えて利用してください。
+> [!IMPORTANT]  
+> libaribb25 をライブラリとして利用する場合で、ACAS 対応 API (`set_acas_mode()` など) を使う際は、ヘッダファイル (.h) とライブラリファイル (.dll / .so) のバージョンを必ず一致させてください。  
+> ACAS 対応 API は v0.2.10 以降で追加された機能ですので、v0.2.9 以前の libaribb25 がインストールされている場合は動作しません。
 
 ### B25Decoder 互換インターフェイスの対応
 
