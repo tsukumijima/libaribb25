@@ -1,23 +1,89 @@
 name: Package
-on: push
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
+  create_release:
+    name: Create Release
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ github.ref_name }}
+          tag: ${{ github.ref_name }}
+          generateReleaseNotes: true
+          allowUpdates: true
+          draft: false
+          prerelease: false
+          body: |
+            libaribb1 / libaribb25 ともに、libaribb25 のアーカイブに含まれています。
+            0.2.9 以降では、[stz2012/recpt1](https://github.com/stz2012/recpt1) などの libari<ins>**b**</ins>25 に依存しているソフトウェアとの互換性が追加されました。<br>
+            stz2012 版 libari**b**25 の代替として利用可能です。
+
+            Debian パッケージをインストールするには、`sudo apt install ./libaribb25_${{ github.ref_name }}_(amd64|arm64).deb` と実行してください。
+            Debian パッケージの動作には、Ubuntu 20.04 (glibc 2.31) 以降の OS が必要です。<br>
+            Debian パッケージをインストールすると、依存する libpcsclite1 も自動的にインストールされます。
+
+            - libaribb25_${{ github.ref_name }}_windows.zip: Windows (32bit/64bit) 用ビルド済みアーカイブ
+              - 展開したフォルダ内の 32bit/ に 32bit 版、64bit/ に 64bit 版のバイナリが含まれます。
+            - libaribb25_${{ github.ref_name }}_amd64.deb: Debian/Ubuntu (x64) 用 Debian パッケージ
+            - libaribb25_${{ github.ref_name }}_arm64.deb: Debian/Ubuntu (arm64) 用 Debian パッケージ
+
+            ### libaribb1
+            - **b1.exe / b1**
+              - ARIB STD-B1 記載の処理を行うためのプログラム
+              - MULTI2 で暗号化された TS を、スカパーカードと通信し復号して出力する
+            - **arib-b1-stream-test.exe / arib-b1-stream-test**
+              - 上記のプログラムに変更を加え、標準入力から MULTI2 で暗号化された TS を受け、復号した TS を標準出力に出力するプログラム
+            - **libaribb1.dll / libaribb1.so**
+              - MULTI2 復号処理を行うライブラリ
+              - Windows では、libaribb1.dll は B1Decoder.dll と互換性がある
+            - **B1Decoder.dll** (Windows のみ)
+              - libaribb1.dll をリネームしただけのもので、ファイル内容は同じ
+            ### libaribb25
+            - **b25.exe / b25**
+              - ARIB STD-B25 記載の処理を行うためのプログラム
+              - MULTI2 で暗号化された TS を、B-CAS カードと通信し復号して出力する
+            - **arib-b25-stream-test.exe / arib-b25-stream-test**
+              - 上記のプログラムに変更を加え、標準入力から MULTI2 で暗号化された TS を受け、復号した TS を標準出力に出力するプログラム
+            - **libaribb25.dll / libaribb25.so**
+              - MULTI2 復号処理を行うライブラリ
+              - Windows では、libaribb25.dll は B25Decoder.dll と互換性がある
+            - **B25Decoder.dll** (Windows のみ)
+              - libaribb25.dll をリネームしただけのもので、ファイル内容は同じ
+
   windows:
     name: Windows Package
-    runs-on: windows-2019
+    runs-on: windows-2022
+    needs: create_release
+    if: ${{ !failure() && !cancelled() }}
     steps:
       - name: setup msbuild
         uses: microsoft/setup-msbuild@v2
       - uses: actions/checkout@v4
+      - name: get version
+        id: get_version
+        shell: pwsh
+        run: |
+          $version = (Get-Content aribb25/td.c | Select-String -Pattern '#define VERSION_STRING "(.*)"').Matches.Groups[1].Value
+          echo "version=$version" >> $ENV:GITHUB_OUTPUT
       - name: build
         run: |
           msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v142
           msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v142
-      - name: get output name
-        id: get_output_name
-        run: |
-          $version = (Get-Content aribb25/td.c | Select-String -Pattern '#define VERSION_STRING "(.*)"').Matches.Groups[1].Value
-          echo "archive_path=libaribb25_${version}_windows.zip" >> $ENV:GITHUB_OUTPUT
       - name: package
         run: |
           mkdir libaribb25/
@@ -29,63 +95,55 @@ jobs:
           Copy-Item -Path libaribb25\64bit\libaribb1.dll -Destination libaribb25\64bit\B1Decoder.dll -Force
           Copy-Item -Path libaribb25\32bit\libaribb25.dll -Destination libaribb25\32bit\B25Decoder.dll -Force
           Copy-Item -Path libaribb25\64bit\libaribb25.dll -Destination libaribb25\64bit\B25Decoder.dll -Force
-          7z a -tzip ${{ steps.get_output_name.outputs.archive_path }} libaribb25
-      - name: save artifacts
-        uses: actions/upload-artifact@v4
+          7z a -tzip libaribb25_${{ steps.get_version.outputs.version }}_windows.zip libaribb25
+      - name: upload to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
-          name: ${{ steps.get_output_name.outputs.archive_path }}
-          path: ${{ steps.get_output_name.outputs.archive_path }}
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: libaribb25_${{ steps.get_version.outputs.version }}_windows.zip
+          overwrite: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   deb-package:
     name: Debian Package
-    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux/amd64
+            arch: amd64
+            cmake_flags: "-DUSE_AVX2=on"
+          - os: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch: arm64
+            cmake_flags: ""
+    runs-on: ${{ matrix.os }}
+    needs: create_release
+    if: ${{ !failure() && !cancelled() }}
     steps:
       - uses: actions/checkout@v4
-      - name: setup
-        run: sudo apt-get install -y build-essential cmake cmake-data libpcsclite-dev pkg-config
-      - name: build
-        run: |
-          cmake -B build -DUSE_AVX2=on -DCMAKE_INSTALL_PREFIX=/usr
-          cd build
-          sudo make package
-      - name: get output name
-        id: get_output_name
-        run: |
-          echo "deb_path=$(ls build/libaribb25_*.deb)" >> "$GITHUB_OUTPUT"
-          echo "deb_file=$(basename $(ls build/libaribb25_*.deb))" >> "$GITHUB_OUTPUT"
-      - name: save artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.get_output_name.outputs.deb_file }}
-          path: ${{ steps.get_output_name.outputs.deb_path }}
-
-  deb-package-arm:
-    name: Debian Package (ARM)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
-      - name: setup
+      - name: build docker image
         uses: docker/build-push-action@v5
         with:
           context: .github/workflows/
-          tags: arm64v8/ubuntu:build
-          build-args: IMAGE=arm64v8/ubuntu:20.04
-          cache-from: type=gha,scope=arm64v8/ubuntu
-          cache-to: type=gha,scope=arm64v8/ubuntu,mode=max
+          tags: ubuntu:build
+          platforms: ${{ matrix.platform }}
+          build-args: IMAGE=ubuntu:20.04
+          cache-from: type=gha,scope=ubuntu-${{ matrix.arch }}
+          cache-to: type=gha,scope=ubuntu-${{ matrix.arch }},mode=max
           load: true
-      - name: build
+      - name: build deb package
         run: |
-          docker run --rm -i -v $(pwd):/work -w /work -e CLICOLOR_FORCE=1 arm64v8/ubuntu:build bash -c \
-            'cmake -B build -DCMAKE_INSTALL_PREFIX=/usr && cd build && make package'
-      - name: get output name
-        id: get_output_name
-        run: |
-          echo "deb_path=$(ls build/libaribb25_*.deb)" >> "$GITHUB_OUTPUT"
-          echo "deb_file=$(basename $(ls build/libaribb25_*.deb))" >> "$GITHUB_OUTPUT"
-      - name: save artifacts
-        uses: actions/upload-artifact@v4
+          docker run --rm -i -v "$(pwd)":/work -w /work ubuntu:build bash -c \
+            'cmake -B build ${{ matrix.cmake_flags }} -DCMAKE_INSTALL_PREFIX=/usr && cd build && make package'
+      - name: upload to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
-          name: ${{ steps.get_output_name.outputs.deb_file }}
-          path: ${{ steps.get_output_name.outputs.deb_path }}
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: build/libaribb25_*.deb
+          overwrite: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}

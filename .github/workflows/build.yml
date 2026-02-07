@@ -7,8 +7,10 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-20.04
           - ubuntu-22.04
+          - ubuntu-24.04
+          - ubuntu-22.04-arm
+          - ubuntu-24.04-arm
         cc: [gcc, clang]
         include:
           - cc: gcc
@@ -35,47 +37,13 @@ jobs:
           ./build/arib-b1-stream-test --help 2>&1 | grep --color=always "ARIB STD-B1"
           ./build/arib-b25-stream-test --help 2>&1 | grep --color=always "ARIB STD-B25"
 
-  arm:
-    name: ARM
-    strategy:
-      matrix:
-        image:
-          - arm64v8/ubuntu
-          - arm64v8/debian
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - name: setup
-        uses: docker/build-push-action@v5
-        with:
-          context: .github/workflows/
-          tags: ${{ matrix.image }}:build
-          build-args: IMAGE=${{ matrix.image }}
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,scope=${{ matrix.image }},mode=max
-          load: true
-      - name: configure
-        run: |
-          mkdir build
-          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c 'cmake --version && cmake ..'
-      - name: build
-        run: docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build cmake --build .
-      - name: test
-        run: |
-          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './b1 2>&1 | grep --color=always "ARIB STD-B1"'
-          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './b25 2>&1 | grep --color=always "ARIB STD-B25"'
-          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './arib-b1-stream-test --help 2>&1 | grep --color=always "ARIB STD-B1"'
-          docker run --rm -i -v $(pwd):/work -w /work/build -e CLICOLOR_FORCE=1 ${{ matrix.image }}:build bash -c './arib-b25-stream-test --help 2>&1 | grep --color=always "ARIB STD-B25"'
-
   macos:
     name: macOS
     strategy:
       matrix:
         os:
-          - macos-12
-          - macos-13
+          - macos-14
+          - macos-15
     runs-on: ${{ matrix.os }}
     env:
       CLICOLOR_FORCE: 1
@@ -99,8 +67,8 @@ jobs:
     strategy:
       matrix:
         os:
-          - windows-2019
           - windows-2022
+          - windows-2025
     runs-on: ${{ matrix.os }}
     steps:
       - name: setup msbuild
