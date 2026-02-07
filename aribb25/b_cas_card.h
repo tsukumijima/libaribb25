@@ -60,6 +60,7 @@ typedef struct {
 	int (* proc_ecm)(void *bcas, B_CAS_ECM_RESULT *dst, uint8_t *src, int len);
 	int (* proc_emm)(void *bcas, uint8_t *src, int len);
 
+	int (* set_acas_mode)(void *bcas, int enable);
 } B_CAS_CARD;
 
 #ifdef __cplusplus
@@ -72,7 +73,7 @@ extern "C" {
 #  define TCHAR char
 #endif
 extern B_CAS_CARD *create_b_cas_card(void);
-extern int override_card_reader_name_pattern(TCHAR * name);
+extern int override_card_reader_name_pattern(const TCHAR * name);
 
 #ifdef __cplusplus
 }
