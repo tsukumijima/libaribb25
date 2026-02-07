@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 if(CMAKE_VERSION VERSION_GREATER 3.21)
 	cmake_policy(SET CMP0128 NEW)
