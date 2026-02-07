@@ -127,6 +127,7 @@ B_CAS_CARD *create_b_cas_card(void)
 	}
 
 	r = (B_CAS_CARD *)(prv+1);
+	prv->acas = -1;
 
 	r->private_data = prv;
 
@@ -234,6 +235,7 @@ static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name)
 	long ret;
 	unsigned long len;
 	int acas;
+	int is_auto_acas_mode;
 
 	B_CAS_CARD_PRIVATE_DATA *prv;
 
@@ -243,6 +245,10 @@ static int init_b_cas_card_with_name(void *bcas, const TCHAR * card_reader_name)
 	}
 
 	acas = prv->acas;
+	is_auto_acas_mode = (acas < 0);
+	if(acas < 0){
+		acas = 0;
+	}
 	teardown(prv);
 
 	ret = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &(prv->mng));
@@ -319,7 +325,7 @@ retry:
 	}
 
 	if(prv->card == 0){
-		if(!prv->acas && !acas){
+		if((is_auto_acas_mode != 0) && (acas == 0)){
 			prv->reader = (LPTSTR)(prv->pool);
 			acas = 1;
 			goto retry;
@@ -332,14 +338,18 @@ retry:
 		return B_CAS_CARD_ERROR_ALL_READERS_CONNECTION_FAILED;
 	}
 
-	if(!prv->acas && acas) {
+	if((is_auto_acas_mode != 0) && (acas != 0)) {
 #if defined(_WIN32)
 		OutputDebugString(TEXT("libaribb25: ACAS detected."));
 #elif defined(DEBUG)
 		fprintf(stderr, "libaribb25: ACAS detected.\n");
 #endif
 	}
-	prv->acas = acas;
+	if(is_auto_acas_mode != 0){
+		prv->acas = -1;
+	}else{
+		prv->acas = acas;
+	}
 	return 0;
 }
 
