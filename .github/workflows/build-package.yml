@@ -30,17 +30,26 @@ jobs:
           prerelease: false
           body: |
             libaribb1 / libaribb25 ともに、libaribb25 のアーカイブに含まれています。
-            0.2.9 以降では、[stz2012/recpt1](https://github.com/stz2012/recpt1) などの libari<ins>**b**</ins>25 に依存しているソフトウェアとの互換性が追加されました。<br>
+            0.2.9 以降では、[stz2012/recpt1](https://github.com/stz2012/recpt1) などの libari<ins>**b**</ins>25 に依存しているソフトウェアとの互換性が追加されました。
             stz2012 版 libari**b**25 の代替として利用可能です。
 
             Debian パッケージをインストールするには、`sudo apt install ./libaribb25_${{ github.ref_name }}_(amd64|arm64).deb` と実行してください。
-            Debian パッケージの動作には、Ubuntu 20.04 (glibc 2.31) 以降の OS が必要です。<br>
+            Debian パッケージの動作には、Ubuntu 20.04 (glibc 2.31) 以降の OS が必要です。
             Debian パッケージをインストールすると、依存する libpcsclite1 も自動的にインストールされます。
 
             - libaribb25_${{ github.ref_name }}_windows.zip: Windows (32bit/64bit) 用ビルド済みアーカイブ
               - 展開したフォルダ内の 32bit/ に 32bit 版、64bit/ に 64bit 版のバイナリが含まれます。
             - libaribb25_${{ github.ref_name }}_amd64.deb: Debian/Ubuntu (x64) 用 Debian パッケージ
             - libaribb25_${{ github.ref_name }}_arm64.deb: Debian/Ubuntu (arm64) 用 Debian パッケージ
+
+            > [!TIP]
+            > **私が Contributor として開発に参加している [recisdb](https://github.com/kazuki0824/recisdb-rs) の `recisdb decode` コマンドでは、`b25` / `arib-b25-stream-test` コマンド相当の機能が内蔵されています！**
+            > arib-b25-stream-test のドロップイン代替としても使えますし、ファイルを後からデコードする使い方もできます。
+            > recisdb での内部では libaribb25 が使われているため、B25 デコードの速度や品質に違いはないはずです。
+            >
+            > さらに、**recisdb では `--card` オプションで利用するカードリーダー名を指定できます。** B-CAS と C-CAS を併用しているなど、一部のニッチなユースケースでは有用かもしれません。
+            > `recisdb tune` コマンドでは、DVB デバイス / Chardev デバイスかを問わず受信でき、またデフォルトで B25 デコードが行われます。recpt1 / dvbv5-zap と arib-b25-stream-test の組み合わせよりもシンプルにできますので、よろしければお試しください。
+            > ([CS 受信時にドロップする問題](https://github.com/kazuki0824/recisdb-rs/issues/110) は recisdb v1.2.4 以降で修正済みです！)
 
             ### libaribb1
             - **b1.exe / b1**
