@@ -396,7 +396,7 @@ static int get_id_b_cas_card(void *bcas, B_CAS_ID *dst)
 
 	slen = sizeof(CARD_ID_INFORMATION_ACQUIRE_CMD);
 	memcpy(prv->sbuf, CARD_ID_INFORMATION_ACQUIRE_CMD, slen);
-	if(prv->acas){
+	if(prv->acas > 0){
 		prv->sbuf[3] = 0x01;
 	}
 	rlen = B_CAS_BUFFER_MAX;
@@ -465,7 +465,7 @@ static int get_pwr_on_ctrl_b_cas_card(void *bcas, B_CAS_PWR_ON_CTRL_INFO *dst)
 
 	slen = sizeof(POWER_ON_CONTROL_INFORMATION_REQUEST_CMD);
 	memcpy(prv->sbuf, POWER_ON_CONTROL_INFORMATION_REQUEST_CMD, slen);
-	if(prv->acas){
+	if(prv->acas > 0){
 		prv->sbuf[3] = 0x01;
 	}
 	prv->sbuf[5] = 0;
@@ -535,7 +535,7 @@ static int proc_ecm_b_cas_card(void *bcas, B_CAS_ECM_RESULT *dst, uint8_t *src, 
 	}
 
 	slen = setup_ecm_receive_command(prv->sbuf, src, len);
-	if(prv->acas){
+	if(prv->acas > 0){
 		prv->sbuf[3] = 0x02;
 	}
 	rlen = B_CAS_BUFFER_MAX;
@@ -624,7 +624,7 @@ static int proc_emm_b_cas_card(void *bcas, uint8_t *src, int len)
 	}
 
 	slen = setup_emm_receive_command(prv->sbuf, src, len);
-	if(prv->acas){
+	if(prv->acas > 0){
 		prv->sbuf[3] = 0x01;
 	}
 	rlen = B_CAS_BUFFER_MAX;
