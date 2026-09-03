@@ -36,6 +36,83 @@ jobs:
           ./build/b25 2>&1 | grep --color=always "ARIB STD-B25"
           ./build/arib-b1-stream-test --help 2>&1 | grep --color=always "ARIB STD-B1"
           ./build/arib-b25-stream-test --help 2>&1 | grep --color=always "ARIB STD-B25"
+          if [ "$(uname -m)" = "aarch64" ]; then
+            grep -qx 'USE_NEON:BOOL=ON' build/CMakeCache.txt || { echo 'CMake did not enable USE_NEON on aarch64' >&2; exit 1; }
+            MULTI2_FLAGS=-DLIBARIBB25_USE_NEON
+          else
+            MULTI2_FLAGS=
+          fi
+          ${{ matrix.cxx }} -std=c++11 -Iaribb25 $MULTI2_FLAGS tests/multi2_kat.cc aribb25/multi2.cc -o build/multi2-kat
+          ./build/multi2-kat
+
+  linux-arm32:
+    name: Linux ARM32 (${{ matrix.cc }}, NEON ${{ matrix.use_neon }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - cc: gcc
+            cxx: g++
+            use_neon: OFF
+          - cc: gcc
+            cxx: g++
+            use_neon: ON
+          - cc: clang
+            cxx: clang++
+            use_neon: OFF
+          - cc: clang
+            cxx: clang++
+            use_neon: ON
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm
+      - name: build and test ARMv7
+        run: |
+          docker run --rm --platform linux/arm/v7 \
+            -e CC=${{ matrix.cc }} \
+            -e CXX=${{ matrix.cxx }} \
+            -e USE_NEON=${{ matrix.use_neon }} \
+            -v "$PWD:/src" \
+            -w /src \
+            ubuntu:22.04 \
+            bash -euxo pipefail -c '
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential clang cmake cmake-data libpcsclite-dev
+              build_dir="build-arm32-${CC}-${USE_NEON}"
+              cmake --version
+              cmake -B "$build_dir" \
+                -DCMAKE_C_COMPILER="$CC" \
+                -DCMAKE_CXX_COMPILER="$CXX" \
+                -DUSE_NEON="$USE_NEON"
+              grep -qx "LIBARIBB25_TARGET_IS_ARM32:INTERNAL=1" "$build_dir/CMakeCache.txt"
+              grep -qx "USE_NEON:BOOL=${USE_NEON}" "$build_dir/CMakeCache.txt"
+              cmake --build "$build_dir"
+              check_usage() {
+                expected="$1"
+                shift
+                status=0
+                output=$("$@" 2>&1) || status=$?
+                printf "%s\n" "$output" | grep -F "$expected"
+                [ "$status" -eq 1 ]
+              }
+              check_usage "ARIB STD-B1" "$build_dir/b1"
+              check_usage "ARIB STD-B25" "$build_dir/b25"
+              check_usage "ARIB STD-B1" "$build_dir/arib-b1-stream-test" --help
+              check_usage "ARIB STD-B25" "$build_dir/arib-b25-stream-test" --help
+              if [ "$USE_NEON" = "ON" ]; then
+                MULTI2_FLAGS="-mfpu=neon -DLIBARIBB25_USE_NEON"
+              else
+                MULTI2_FLAGS=
+              fi
+              "$CXX" -std=c++11 -Iaribb25 $MULTI2_FLAGS tests/multi2_kat.cc aribb25/multi2.cc -o "$build_dir/multi2-kat"
+              "$build_dir/multi2-kat"
+            '
 
   macos:
     name: macOS
@@ -61,6 +138,14 @@ jobs:
           ./build/b25 2>&1 | grep --color=always "ARIB STD-B25"
           ./build/arib-b1-stream-test --help 2>&1 | grep --color=always "ARIB STD-B1"
           ./build/arib-b25-stream-test --help 2>&1 | grep --color=always "ARIB STD-B25"
+          if [ "$(uname -m)" = "arm64" ]; then
+            grep -qx 'USE_NEON:BOOL=ON' build/CMakeCache.txt || { echo 'CMake did not enable USE_NEON on arm64' >&2; exit 1; }
+            MULTI2_FLAGS=-DLIBARIBB25_USE_NEON
+          else
+            MULTI2_FLAGS=
+          fi
+          c++ -std=c++11 -Iaribb25 $MULTI2_FLAGS tests/multi2_kat.cc aribb25/multi2.cc -o build/multi2-kat
+          ./build/multi2-kat
 
   windows:
     name: Windows
@@ -78,6 +163,9 @@ jobs:
         run: |
           msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v142
           msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v142
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          cmd /c "`"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x86 -host_arch=x64 && cl /nologo /EHsc /I aribb25 /D ENABLE_MULTI2_SIMD tests\multi2_kat.cc aribb25\multi2.c aribb25\multi2_simd.c /Fe:Win32\Release\multi2-kat.exe"
+          cmd /c "`"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 -host_arch=x64 && cl /nologo /EHsc /I aribb25 /D ENABLE_MULTI2_SIMD tests\multi2_kat.cc aribb25\multi2.c aribb25\multi2_simd.c /Fe:x64\Release\multi2-kat.exe"
       - name: test
         run: |
           Win32\Release\b1.exe 2>&1 | findstr "ARIB STD-B1"
@@ -88,3 +176,27 @@ jobs:
           x64\Release\arib-b1-stream-test.exe --help 2>&1 | findstr "ARIB STD-B1"
           Win32\Release\arib-b25-stream-test.exe --help 2>&1 | findstr "ARIB STD-B25"
           x64\Release\arib-b25-stream-test.exe --help 2>&1 | findstr "ARIB STD-B25"
+          Win32\Release\multi2-kat.exe
+          x64\Release\multi2-kat.exe
+
+  windows-arm64:
+    name: Windows ARM64 NEON
+    runs-on: windows-11-vs2026-arm
+    steps:
+      - name: setup msbuild
+        uses: microsoft/setup-msbuild@v3
+        with:
+          msbuild-architecture: arm64
+      - uses: actions/checkout@v4
+      - name: build
+        run: |
+          msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=ARM64
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          cmd /c "`"$vs\Common7\Tools\VsDevCmd.bat`" -arch=arm64 -host_arch=arm64 && cl /nologo /EHsc /I aribb25 /D LIBARIBB25_USE_NEON tests\multi2_kat.cc aribb25\multi2.cc /Fe:ARM64\Release\multi2-kat.exe"
+      - name: test
+        run: |
+          ARM64\Release\b1.exe 2>&1 | findstr "ARIB STD-B1"
+          ARM64\Release\b25.exe 2>&1 | findstr "ARIB STD-B25"
+          ARM64\Release\arib-b1-stream-test.exe --help 2>&1 | findstr "ARIB STD-B1"
+          ARM64\Release\arib-b25-stream-test.exe --help 2>&1 | findstr "ARIB STD-B25"
+          ARM64\Release\multi2-kat.exe

@@ -1,9 +1,17 @@
 #pragma once
 
-#if defined(__ARM_NEON__) || defined(__ARM_NEON)
+#if defined(LIBARIBB25_USE_NEON)
+
+#if !defined(_WIN32) && (!defined(__BYTE_ORDER__) || !defined(__ORDER_LITTLE_ENDIAN__) || (__BYTE_ORDER__) != (__ORDER_LITTLE_ENDIAN__))
+#error "Currently, USE_NEON is only for little-endian."
+#endif
 
 #include <utility>
+#if defined(_MSC_VER) && (defined(_M_ARM64) || defined(_M_ARM64EC))
+#include <arm64_neon.h>
+#else
 #include <arm_neon.h>
+#endif
 
 #include "portable.h"
 
@@ -198,4 +206,4 @@ inline arm::neon2<S> rot1_add_dec(const arm::neon2<S> &v) {
 
 }
 
-#endif /* __ARM_NEON__ || __ARM_NEON */
+#endif /* LIBARIBB25_USE_NEON */
