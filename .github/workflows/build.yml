@@ -21,7 +21,7 @@ jobs:
     env:
       CLICOLOR_FORCE: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: setup
         run: sudo apt-get install -y build-essential clang cmake cmake-data libpcsclite-dev
       - name: configure
@@ -66,7 +66,7 @@ jobs:
             cxx: clang++
             use_neon: ON
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - uses: docker/setup-qemu-action@v4
@@ -125,7 +125,7 @@ jobs:
     env:
       CLICOLOR_FORCE: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: configure
         run: |
           cmake --version
@@ -157,8 +157,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: setup msbuild
-        uses: microsoft/setup-msbuild@v2
-      - uses: actions/checkout@v4
+        uses: microsoft/setup-msbuild@v3
+      - uses: actions/checkout@v6
       - name: build
         run: |
           msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v142
@@ -187,7 +187,7 @@ jobs:
         uses: microsoft/setup-msbuild@v3
         with:
           msbuild-architecture: arm64
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: build
         run: |
           msbuild arib_std_b25.sln /t:Build /p:Configuration=Release /p:Platform=ARM64
