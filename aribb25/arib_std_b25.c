@@ -1000,6 +1000,10 @@ static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 	slen = prv->sbuf.tail - prv->sbuf.head;
 	dlen = prv->dbuf.tail - prv->dbuf.head;
 
+	if(buf->size > TS_WORK_BUFFER_MAX_SIZE){
+		return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
+	}
+
 	if(!append_work_buffer(&(prv->sbuf), buf->data, buf->size)){
 		return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
 	}
