@@ -328,6 +328,8 @@ enum PID_MAP_TYPE {
 	PID_MAP_TYPE_OTHER                          = 0xff00,
 };
 
+#define TS_WORK_BUFFER_MAX_SIZE (256*1024*1024)
+
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  function prototypes (interface method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -997,6 +999,10 @@ static int put_arib_std_b25(void *std_b25, ARIB_STD_B25_BUFFER *buf)
 
 	slen = prv->sbuf.tail - prv->sbuf.head;
 	dlen = prv->dbuf.tail - prv->dbuf.head;
+
+	if(buf->size > TS_WORK_BUFFER_MAX_SIZE){
+		return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
+	}
 
 	if(!append_work_buffer(&(prv->sbuf), buf->data, buf->size)){
 		return ARIB_STD_B25_ERROR_NO_ENOUGH_MEMORY;
@@ -2860,6 +2866,10 @@ static int reserve_work_buffer(TS_WORK_BUFFER *buf, intptr_t size)
 	int n;
 	uint8_t *p;
 
+	if(size > TS_WORK_BUFFER_MAX_SIZE){
+		return 0;
+	}
+	
 	if(buf->max >= size){
 		return 1;
 	}

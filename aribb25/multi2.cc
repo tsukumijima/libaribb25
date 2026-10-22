@@ -102,6 +102,12 @@ struct multi2 : public MULTI2 {
 
 }
 
+#if defined(_MSC_VER)
+using decrypt_size_t = intptr_t;
+#else
+using decrypt_size_t = int32_t;
+#endif
+
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  function prototypes (interface method)
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -113,7 +119,7 @@ static int set_init_cbc_multi2(void *m2, uint8_t *val);
 static int set_scramble_key_multi2(void *m2, uint8_t *val);
 static int clear_scramble_key_multi2(void *m2);
 static int encrypt_multi2(void *m2, int32_t type, uint8_t *buf, int32_t size);
-static int decrypt_multi2(void *m2, int32_t type, uint8_t *buf, int32_t size);
+static int decrypt_multi2(void *m2, int32_t type, uint8_t *buf, decrypt_size_t size);
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  global function implementation
@@ -243,14 +249,14 @@ static int encrypt_multi2(void *m2, int32_t type, uint8_t *buf, int32_t size)
 	return prv->encrypt(type, buf, size);
 }
 
-static int decrypt_multi2(void *m2, int32_t type, uint8_t *buf, int32_t size)
+static int decrypt_multi2(void *m2, int32_t type, uint8_t *buf, decrypt_size_t size)
 {
 	multi2::multi2 *prv = private_data(m2);
 	if (!prv || !buf || size < 1) {
 		return MULTI2_ERROR_INVALID_PARAMETER;
 	}
 
-	return prv->decrypt(type, buf, size);
+	return prv->decrypt(type, buf, static_cast<size_t>(size));
 }
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
