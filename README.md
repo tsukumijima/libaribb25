@@ -61,16 +61,16 @@ Mirakurun で受信した放送波のスクランブルを解除するための 
 ENABLE_ARIB_STREAM_TEST プリプロセッサが定義された状態でビルドすると、b1・b25 ではなく arib-b1-stream-test・arib-b25-stream-test が生成されます。  
 arib-b1-stream-test・arib-b25-stream-test の統合にともない、Windows (Visual Studio)・Linux (CMake) の両方で libaribb1・libaribb25 と同時に arib-b1-stream-test・arib-b25-stream-test が生成できるよう、Visual Studio のプロジェクトファイルと CMakeList.txt を変更しています。
 
-### ACAS 対応 (v0.2.10 以降)
+### ACAS チップによるスクランブル解除対応 (v0.2.10 以降)
 
-ARIB STD-B25 側 (b25 / arib-b25-stream-test / libaribb25) で、ACAS カードによるスクランブル解除に対応しました。  
+ACAS チップに搭載されている B-CAS 互換機能を活用した、地上波・BS2K・CS のスクランブル解除に対応しました。  
 従来の B-CAS カード向けの処理はそのまま維持しているため、B-CAS カードを使った既存の動作には一切影響を与えません。ABI にも互換性があるはずです。
 
 `-a` オプションを指定しない場合、まず B-CAS モードで接続を試み、失敗した場合は自動的に ACAS モードで再試行します。
 
 > [!NOTE]  
 > [mmttmte/libaribb25](https://github.com/mmttmte/libaribb25) をベースに改良が加えられていた [hendecarows/libaribb25 (docker-4k branch)](https://github.com/hendecarows/libaribb25/tree/docker-4k) にある ACAS 対応フォークでの変更を、一部修正の上で取り込みました。  
-> なお、B61 デコードには対応していません。代わりに [mmttmte/arib-b61-stream-test](https://github.com/mmttmte/arib-b61-stream-test) をご利用ください。
+> なお、MMT/TLV ストリームの B61 デコードには対応していません。代わりに [mmttmte/arib-b61-stream-test](https://github.com/mmttmte/arib-b61-stream-test) をご利用ください。
 
 b25 / arib-b25-stream-test では、下記のコマンドラインオプションを追加しています。
 
